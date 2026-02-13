@@ -11,7 +11,7 @@ import (
 )
 
 func doRequest(method, path string, body any, accessToken string) ([]byte, error) {
-	url := config.APIURL + path
+	url := config.APIURL() + path
 
 	var reqBody io.Reader
 	if body != nil {

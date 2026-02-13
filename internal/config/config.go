@@ -1,3 +1,10 @@
 package config
 
-const APIURL = "http://localhost:8001"
+import "os"
+
+func APIURL() string {
+	if v := os.Getenv("PZ_API_URL"); v != "" {
+		return v
+	}
+	return "https://paperzilla.ai"
+}

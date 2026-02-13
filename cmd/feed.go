@@ -47,13 +47,13 @@ var feedCmd = &cobra.Command{
 			Limit:        limit,
 		}
 
-		papers, err := api.FetchFeed(tokens.AccessToken, projectID, opts)
+		feed, err := api.FetchFeed(tokens.AccessToken, projectID, opts)
 		if err != nil {
 			return fmt.Errorf("failed to fetch feed: %w", err)
 		}
 
 		if jsonOut {
-			data, err := json.MarshalIndent(papers, "", "  ")
+			data, err := json.MarshalIndent(feed, "", "  ")
 			if err != nil {
 				return fmt.Errorf("failed to marshal JSON: %w", err)
 			}
@@ -66,9 +66,9 @@ var feedCmd = &cobra.Command{
 			return fmt.Errorf("failed to fetch project: %w", err)
 		}
 
-		fmt.Printf("%s — %d papers\n\n", project.Name, len(papers))
+		fmt.Printf("%s — %d papers (total: %d)\n\n", project.Name, len(feed.Items), feed.Total)
 
-		for _, p := range papers {
+		for _, p := range feed.Items {
 			icon := "○ Related"
 			if p.RelevanceClass == 2 {
 				icon = "★ Must Read"
