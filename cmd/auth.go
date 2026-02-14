@@ -53,7 +53,9 @@ func loadAuth() (config.Tokens, error) {
 			fmt.Println("Session expired.")
 			return runLogin()
 		}
-		config.SaveTokens(tokens)
+		if err := config.SaveTokens(tokens); err != nil {
+			return config.Tokens{}, fmt.Errorf("failed to save refreshed tokens: %w", err)
+		}
 	}
 
 	return tokens, nil
