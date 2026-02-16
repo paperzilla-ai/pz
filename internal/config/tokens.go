@@ -13,6 +13,9 @@ type Tokens struct {
 }
 
 func tokensPath() string {
+	if p := os.Getenv("PZ_TOKENS_PATH"); p != "" {
+		return p
+	}
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".paperzilla", "tokens.json")
 }
