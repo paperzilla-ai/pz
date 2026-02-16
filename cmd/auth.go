@@ -50,7 +50,7 @@ func loadAuth() (config.Tokens, error) {
 	if time.Now().Unix() >= tokens.ExpiresAt {
 		tokens, err = api.RefreshAccessToken(tokens.RefreshToken)
 		if err != nil {
-			fmt.Println("Session expired.")
+			fmt.Fprintf(os.Stderr, "Token refresh failed: %v\n", err)
 			return runLogin()
 		}
 		if err := config.SaveTokens(tokens); err != nil {
