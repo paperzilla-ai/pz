@@ -1,0 +1,192 @@
+---
+title: Commands
+description: Complete reference for all Paperzilla CLI commands, flags, and output formats
+---
+
+# Commands
+
+## pz login
+
+Authenticate with your Paperzilla account using email OTP.
+
+```bash
+pz login
+```
+
+Prompts for your email address, sends a one-time code, and stores the session locally at `~/.paperzilla/tokens.json`. The session refreshes automatically — you should only need to log in once.
+
+If your session expires while running any other command, the login flow starts automatically.
+
+---
+
+## pz project list
+
+List all your projects.
+
+```bash
+pz project list
+```
+
+**Output:**
+
+```
+ID                                    NAME                       MODE        VISIBILITY  CREATED
+a1b2c3d4-e5f6-7890-abcd-ef1234567890  Machine Learning Papers    auto        private     2025-06-15 10:30
+```
+
+---
+
+## pz project \<id\>
+
+Show full details for a single project.
+
+```bash
+pz project a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+**Output:**
+
+```
+Name:             Machine Learning Papers
+ID:               a1b2c3d4-e5f6-7890-abcd-ef1234567890
+Mode:             auto
+Visibility:       private
+Matching State:   active
+Email Frequency:  daily
+Email Time:       09:00
+Max Candidates:   100
+Max Papers/Digest:20
+Created:          2025-06-15 10:30
+Activated:        2025-06-16 00:00
+Last Digest:      2025-08-01 09:00
+
+Interest:
+  Recent advances in transformer architectures and efficiency
+```
+
+---
+
+## pz feed \<project-id\>
+
+Show the curated paper feed for a project.
+
+```bash
+pz feed <project-id> [flags]
+```
+
+### Flags
+
+| Flag | Short | Type | Description |
+|------|-------|------|-------------|
+| `--json` | `-j` | bool | Output the full feed as JSON |
+| `--must-read` | `-m` | bool | Only show must-read (class 2) papers |
+| `--since` | `-s` | string | Only papers with `ready_at` on or after this ISO date |
+| `--limit` | `-n` | int | Maximum number of results (API default: 20, max: 100) |
+
+### Examples
+
+Browse the feed:
+
+```bash
+pz feed a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+Only must-read papers from the last week, limit to 5:
+
+```bash
+pz feed a1b2c3d4-e5f6-7890-abcd-ef1234567890 --must-read --since 2025-07-25 --limit 5
+```
+
+Export as JSON:
+
+```bash
+pz feed a1b2c3d4-e5f6-7890-abcd-ef1234567890 --json
+```
+
+### Default output
+
+```
+Machine Learning Papers — 12 papers (total: 142)
+
+★ Must Read  A Novel Approach to Transformer Efficiency
+  Smith et al. · arxiv · 2025-08-01 · relevance: 92%
+
+○ Related  On the Convergence Properties of Diffusion Models
+  Chen et al. · arxiv · 2025-07-30 · relevance: 74%
+```
+
+Each paper shows:
+- **Relevance class** — `★ Must Read` or `○ Related`
+- **Title** — truncated to 80 characters
+- **First author** — surname with "et al." if there are co-authors
+- **Source** — arxiv, biorxiv, medrxiv, or chinaxiv
+- **Published date**
+- **Relevance score** — percentage match to your interests
+
+### JSON output
+
+With `--json`, the full paginated response is returned:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "short_id": "abc123",
+      "slug": "paper-title-slug",
+      "paper_title": "A Novel Approach to...",
+      "summary": "This paper presents...",
+      "relevance_score": 0.92,
+      "relevance_class": 2,
+      "combined_score": 0.87,
+      "matching_details": {},
+      "personalized_note": "Relevant because...",
+      "user_starred": false,
+      "user_clicked": false,
+      "ready_at": "2025-08-01T09:00:00Z",
+      "paper": {
+        "id": "uuid",
+        "title": "A Novel Approach to...",
+        "abstract": "We present...",
+        "authors": [{"name": "Jane Smith"}],
+        "published_date": "2025-07-20",
+        "pdf_url": "https://...",
+        "url": "https://...",
+        "doi": "10.1234/...",
+        "source_id": 1,
+        "source_paper_id": "2507.12345",
+        "short_id": "abc123",
+        "slug": "a-novel-approach",
+        "metadata": {}
+      }
+    }
+  ],
+  "total": 142,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+**Relevance classes:**
+
+| Value | Meaning |
+|-------|---------|
+| 2 | Must Read |
+| 1 | Related |
+
+**Source IDs:**
+
+| ID | Source |
+|----|--------|
+| 1 | arXiv |
+| 2 | bioRxiv |
+| 3 | medRxiv |
+| 4 | chinaXiv |
+
+---
+
+## Environment variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PZ_API_URL` | API base URL | `https://paperzilla.ai` |
