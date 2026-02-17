@@ -77,6 +77,16 @@ pz feed <project-id> --since 2025-08-01
 pz feed <project-id> --json
 ```
 
+### Subscribe in a feed reader
+
+Get an Atom feed URL you can add to any feed reader ([Vienna RSS](https://github.com/ViennaRSS/vienna-rss), NetNewsWire, Feedly, etc.):
+
+```bash
+pz feed <project-id> --atom
+```
+
+This prints a URL with an embedded feed token. Paste it into your feed reader to subscribe — no login required on the reader side. The token is per-user and the same URL is returned on repeated calls. Running `--atom` again after revoking will generate a new token.
+
 ## Configuration
 
 | Variable | Description | Default |

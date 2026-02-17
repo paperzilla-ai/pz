@@ -109,6 +109,20 @@ Export as JSON for scripting:
 pz feed <project-id> --json
 ```
 
+## Subscribe in a feed reader
+
+Get an Atom feed URL you can add to [Vienna RSS](https://github.com/ViennaRSS/vienna-rss), NetNewsWire, Feedly, or any other feed reader:
+
+```bash
+pz feed <project-id> --atom
+```
+
+```
+https://paperzilla.ai/api/feed/atom/a1b2c3d4-...?token=pzft_...
+```
+
+Paste the URL into your feed reader to subscribe. No login is needed on the reader side — the URL contains a personal feed token. The same URL is returned each time you run the command.
+
 ## Configuration
 
 The CLI connects to `https://paperzilla.ai` by default. To use a different API (e.g. for local development), set the `PZ_API_URL` environment variable:

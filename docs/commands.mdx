@@ -82,6 +82,7 @@ pz feed <project-id> [flags]
 | `--must-read` | `-m` | bool | Only show must-read (class 2) papers |
 | `--since` | `-s` | string | Only papers with `ready_at` on or after this ISO date |
 | `--limit` | `-n` | int | Maximum number of results (API default: 20, max: 100) |
+| `--atom` | | bool | Print an Atom feed URL for use in feed readers |
 
 ### Examples
 
@@ -102,6 +103,24 @@ Export as JSON:
 ```bash
 pz feed a1b2c3d4-e5f6-7890-abcd-ef1234567890 --json
 ```
+
+Subscribe in a feed reader:
+
+```bash
+pz feed a1b2c3d4-e5f6-7890-abcd-ef1234567890 --atom
+```
+
+### Atom feed
+
+The `--atom` flag prints a URL you can paste into any feed reader ([Vienna RSS](https://github.com/ViennaRSS/vienna-rss), NetNewsWire, Feedly, etc.):
+
+```
+https://paperzilla.ai/api/feed/atom/a1b2c3d4-e5f6-7890-abcd-ef1234567890?token=pzft_...
+```
+
+The URL contains a personal feed token so the reader can poll it without needing to log in. The token is per-user (not per-project), so you can use it across all your projects. Running `--atom` multiple times returns the same token.
+
+The feed includes up to 50 recent papers, with titles, authors, links, and relevance labels. Feed readers that support ETag caching will get `304 Not Modified` responses when nothing has changed.
 
 ### Default output
 
