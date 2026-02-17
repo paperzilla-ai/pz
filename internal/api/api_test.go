@@ -267,6 +267,37 @@ func TestFetchFeedQueryParams(t *testing.T) {
 	}
 }
 
+func TestFetchFeedToken(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if r.URL.Path != "/api/auth/feed-token" {
+			t.Errorf("path = %s, want /api/auth/feed-token", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer my_token" {
+			t.Errorf("Authorization = %q", r.Header.Get("Authorization"))
+		}
+
+		json.NewEncoder(w).Encode(map[string]any{
+			"token":      "pzft_abc123",
+			"created_at": "2025-01-01T00:00:00Z",
+		})
+	})
+	defer server.Close()
+
+	resp, err := FetchFeedToken("my_token")
+	if err != nil {
+		t.Fatalf("FetchFeedToken: %v", err)
+	}
+	if resp.Token != "pzft_abc123" {
+		t.Errorf("Token = %q", resp.Token)
+	}
+	if resp.CreatedAt != "2025-01-01T00:00:00Z" {
+		t.Errorf("CreatedAt = %q", resp.CreatedAt)
+	}
+}
+
 func TestFetchFeedNoOptionalParams(t *testing.T) {
 	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.RawQuery != "" {

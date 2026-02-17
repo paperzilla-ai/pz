@@ -19,7 +19,8 @@ var rootCmd = &cobra.Command{
   pz project <id>
   pz feed <id>
   pz feed <id> --must-read --limit 5
-  pz feed <id> --json`,
+  pz feed <id> --json
+  pz feed <id> --atom`,
 }
 
 func Execute() {

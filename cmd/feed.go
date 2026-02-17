@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/paperzilla/pz/internal/api"
+	"github.com/paperzilla/pz/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +23,7 @@ func init() {
 	feedCmd.Flags().BoolP("must-read", "m", false, "Only show must-read papers")
 	feedCmd.Flags().StringP("since", "s", "", "Only papers ready after this date")
 	feedCmd.Flags().IntP("limit", "n", 0, "Limit number of results")
+	feedCmd.Flags().Bool("atom", false, "Print Atom feed URL for use in feed readers")
 }
 
 var feedCmd = &cobra.Command{
@@ -35,6 +37,16 @@ var feedCmd = &cobra.Command{
 		}
 
 		projectID := args[0]
+
+		atom, _ := cmd.Flags().GetBool("atom")
+		if atom {
+			tokenResp, err := api.FetchFeedToken(tokens.AccessToken)
+			if err != nil {
+				return fmt.Errorf("failed to get feed token: %w", err)
+			}
+			fmt.Printf("%s/api/feed/atom/%s?token=%s\n", config.APIURL(), projectID, tokenResp.Token)
+			return nil
+		}
 
 		jsonOut, _ := cmd.Flags().GetBool("json")
 		mustRead, _ := cmd.Flags().GetBool("must-read")

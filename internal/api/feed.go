@@ -57,6 +57,25 @@ type FeedOptions struct {
 	Offset       int
 }
 
+type FeedTokenResponse struct {
+	Token     string `json:"token"`
+	CreatedAt string `json:"created_at"`
+}
+
+func FetchFeedToken(accessToken string) (FeedTokenResponse, error) {
+	body, err := doRequest("POST", "/api/auth/feed-token", nil, accessToken)
+	if err != nil {
+		return FeedTokenResponse{}, err
+	}
+
+	var resp FeedTokenResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return FeedTokenResponse{}, err
+	}
+
+	return resp, nil
+}
+
 func FetchFeed(accessToken, projectID string, opts FeedOptions) (FeedResponse, error) {
 	params := url.Values{}
 	if opts.MustReadOnly {
