@@ -40,7 +40,9 @@ var feedCmd = &cobra.Command{
 
 		atom, _ := cmd.Flags().GetBool("atom")
 		if atom {
-			tokenResp, err := api.FetchFeedToken(tokens.AccessToken)
+			tokenResp, err := withAuth(&tokens, func(at string) (api.FeedTokenResponse, error) {
+				return api.FetchFeedToken(at)
+			})
 			if err != nil {
 				return fmt.Errorf("failed to get feed token: %w", err)
 			}
@@ -59,7 +61,9 @@ var feedCmd = &cobra.Command{
 			Limit:        limit,
 		}
 
-		feed, err := api.FetchFeed(tokens.AccessToken, projectID, opts)
+		feed, err := withAuth(&tokens, func(at string) (api.FeedResponse, error) {
+			return api.FetchFeed(at, projectID, opts)
+		})
 		if err != nil {
 			return fmt.Errorf("failed to fetch feed: %w", err)
 		}
@@ -73,7 +77,9 @@ var feedCmd = &cobra.Command{
 			return nil
 		}
 
-		project, err := api.FetchProject(tokens.AccessToken, projectID)
+		project, err := withAuth(&tokens, func(at string) (api.Project, error) {
+			return api.FetchProject(at, projectID)
+		})
 		if err != nil {
 			return fmt.Errorf("failed to fetch project: %w", err)
 		}

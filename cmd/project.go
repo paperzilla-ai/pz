@@ -27,7 +27,9 @@ var projectCmd = &cobra.Command{
 			return err
 		}
 
-		p, err := api.FetchProject(tokens.AccessToken, args[0])
+		p, err := withAuth(&tokens, func(at string) (api.Project, error) {
+			return api.FetchProject(at, args[0])
+		})
 		if err != nil {
 			return fmt.Errorf("failed to fetch project: %w", err)
 		}
@@ -62,7 +64,9 @@ var projectListCmd = &cobra.Command{
 			return err
 		}
 
-		projects, err := api.FetchProjects(tokens.AccessToken)
+		projects, err := withAuth(&tokens, func(at string) ([]api.Project, error) {
+			return api.FetchProjects(at)
+		})
 		if err != nil {
 			return fmt.Errorf("failed to fetch projects: %w", err)
 		}

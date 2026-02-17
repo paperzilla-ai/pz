@@ -3,12 +3,15 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/paperzilla/pz/internal/config"
 )
+
+var ErrUnauthorized = errors.New("unauthorized")
 
 func doRequest(method, path string, body any, accessToken string) ([]byte, error) {
 	url := config.APIURL() + path
@@ -43,6 +46,9 @@ func doRequest(method, path string, body any, accessToken string) ([]byte, error
 		return nil, err
 	}
 
+	if resp.StatusCode == 401 {
+		return nil, ErrUnauthorized
+	}
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(respBody))
 	}

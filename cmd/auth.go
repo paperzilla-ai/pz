@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -59,4 +60,20 @@ func loadAuth() (config.Tokens, error) {
 	}
 
 	return tokens, nil
+}
+
+// withAuth calls fn with the current access token. On 401 it re-logins and retries once.
+func withAuth[T any](tokens *config.Tokens, fn func(string) (T, error)) (T, error) {
+	result, err := fn(tokens.AccessToken)
+	if errors.Is(err, api.ErrUnauthorized) {
+		fmt.Println("Session expired. Please log in again.")
+		newTokens, loginErr := runLogin()
+		if loginErr != nil {
+			var zero T
+			return zero, loginErr
+		}
+		*tokens = newTokens
+		return fn(tokens.AccessToken)
+	}
+	return result, err
 }
