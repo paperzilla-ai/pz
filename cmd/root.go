@@ -7,9 +7,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Version is set by goreleaser via ldflags.
+var Version = "dev"
+
 var rootCmd = &cobra.Command{
-	Use:   "pz",
-	Short: "Paperzilla CLI",
+	Use:     "pz",
+	Short:   "Paperzilla CLI",
+	Version: Version,
 	Example: `  pz login
   pz project list
   pz project <id>

@@ -7,8 +7,8 @@ A command-line tool for [Paperzilla](https://paperzilla.ai), an AI-powered scien
 Build from source (requires Go 1.23+):
 
 ```bash
-git clone https://github.com/pors/paperzilla-cli.git
-cd paperzilla-cli
+git clone https://github.com/paperzilla-ai/pz.git
+cd pz
 go build -o pz .
 mv pz /usr/local/bin/
 ```

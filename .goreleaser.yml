@@ -1,0 +1,51 @@
+version: 2
+
+builds:
+  - binary: pz
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/paperzilla/pz/cmd.Version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: "pz_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+brews:
+  - repository:
+      owner: paperzilla-ai
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    name: pz
+    homepage: https://paperzilla.ai
+    description: CLI for Paperzilla — AI-powered scientific paper discovery
+    license: MIT
+    install: |
+      bin.install "pz"
+
+scoops:
+  - repository:
+      owner: paperzilla-ai
+      name: scoop-bucket
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    name: pz
+    homepage: https://paperzilla.ai
+    description: CLI for Paperzilla — AI-powered scientific paper discovery
+    license: MIT
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"

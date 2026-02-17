@@ -1,4 +1,5 @@
 pz
+dist/
 .claude/
 .mcp.json
 SPEC-FEED-COMMAND.md
