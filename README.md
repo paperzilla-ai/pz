@@ -4,7 +4,33 @@ A command-line tool for [Paperzilla](https://paperzilla.ai), an AI-powered scien
 
 ## Install
 
-Build from source (requires Go 1.23+):
+### macOS
+
+```bash
+brew install paperzilla-ai/tap/pz
+```
+
+### Windows
+
+Via [Scoop](https://scoop.sh):
+
+```bash
+scoop bucket add paperzilla-ai https://github.com/paperzilla-ai/scoop-bucket
+scoop install pz
+```
+
+### Linux
+
+Download the latest binary from [GitHub Releases](https://github.com/paperzilla-ai/pz/releases):
+
+```bash
+curl -sL https://github.com/paperzilla-ai/pz/releases/latest/download/pz_linux_amd64.tar.gz | tar xz
+sudo mv pz /usr/local/bin/
+```
+
+### Build from source
+
+Requires Go 1.23+:
 
 ```bash
 git clone https://github.com/paperzilla-ai/pz.git

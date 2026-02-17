@@ -7,17 +7,38 @@ description: Install the Paperzilla CLI and start browsing your research feed in
 
 ## Install
 
-Download the latest binary from [GitHub releases](https://github.com/paperzilla-ai/pz/releases) or build from source:
+### macOS
+
+```bash
+brew install paperzilla-ai/tap/pz
+```
+
+### Windows
+
+Via [Scoop](https://scoop.sh):
+
+```bash
+scoop bucket add paperzilla-ai https://github.com/paperzilla-ai/scoop-bucket
+scoop install pz
+```
+
+### Linux
+
+Download the latest binary from [GitHub Releases](https://github.com/paperzilla-ai/pz/releases):
+
+```bash
+curl -sL https://github.com/paperzilla-ai/pz/releases/latest/download/pz_linux_amd64.tar.gz | tar xz
+sudo mv pz /usr/local/bin/
+```
+
+### Build from source
+
+Requires Go 1.23+:
 
 ```bash
 git clone https://github.com/paperzilla-ai/pz.git
 cd pz
 go build -o pz .
-```
-
-Move the binary somewhere on your PATH:
-
-```bash
 mv pz /usr/local/bin/
 ```
 
