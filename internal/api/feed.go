@@ -10,6 +10,10 @@ type Author struct {
 	Name string `json:"name"`
 }
 
+type Source struct {
+	Name string `json:"name"`
+}
+
 type Paper struct {
 	ID            string   `json:"id"`
 	Title         string   `json:"title"`
@@ -20,6 +24,7 @@ type Paper struct {
 	URL           string   `json:"url"`
 	DOI           string   `json:"doi"`
 	SourceID      int      `json:"source_id"`
+	Source        *Source  `json:"source"`
 	SourcePaperID string   `json:"source_paper_id"`
 	ShortID       string   `json:"short_id"`
 	Slug          string   `json:"slug"`
@@ -37,8 +42,6 @@ type FeedPaper struct {
 	CombinedScore    float64 `json:"combined_score"`
 	MatchingDetails  any     `json:"matching_details"`
 	PersonalizedNote string  `json:"personalized_note"`
-	UserStarred      bool    `json:"user_starred"`
-	UserClicked      bool    `json:"user_clicked"`
 	ReadyAt          string  `json:"ready_at"`
 	Paper            Paper   `json:"paper"`
 }

@@ -211,7 +211,13 @@ func TestFetchFeed(t *testing.T) {
 				{
 					"id": "fp-1", "paper_title": "Test Paper",
 					"relevance_score": 0.95, "relevance_class": 2,
-					"paper": map[string]any{"id": "p-1", "title": "Test Paper", "authors": []map[string]string{{"name": "Smith"}}},
+					"paper": map[string]any{
+						"id":        "p-1",
+						"title":     "Test Paper",
+						"authors":   []map[string]string{{"name": "Smith"}},
+						"source_id": 1,
+						"source":    map[string]any{"name": "arxiv"},
+					},
 				},
 			},
 			"total": 1, "limit": 20, "offset": 0,
@@ -231,6 +237,9 @@ func TestFetchFeed(t *testing.T) {
 	}
 	if feed.Items[0].PaperTitle != "Test Paper" {
 		t.Errorf("PaperTitle = %q", feed.Items[0].PaperTitle)
+	}
+	if feed.Items[0].Paper.Source == nil || feed.Items[0].Paper.Source.Name != "arxiv" {
+		t.Errorf("Source.Name = %#v, want %q", feed.Items[0].Paper.Source, "arxiv")
 	}
 }
 

@@ -10,13 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var sourceNames = map[int]string{
-	1: "arxiv",
-	2: "biorxiv",
-	3: "medrxiv",
-	4: "chinaxiv",
-}
-
 func init() {
 	rootCmd.AddCommand(feedCmd)
 	feedCmd.Flags().BoolP("json", "j", false, "Output as JSON")
@@ -100,7 +93,7 @@ var feedCmd = &cobra.Command{
 			fmt.Printf("%s  %s\n", icon, title)
 
 			surname := firstAuthorSurname(p.Paper.Authors)
-			source := sourceNames[p.Paper.SourceID]
+			source := sourceLabel(p.Paper)
 			date := formatTime(p.Paper.PublishedDate)
 			score := int(p.RelevanceScore * 100)
 
@@ -122,4 +115,17 @@ func firstAuthorSurname(authors []api.Author) string {
 		return surname + " et al."
 	}
 	return surname
+}
+
+func sourceLabel(paper api.Paper) string {
+	if paper.Source != nil {
+		name := strings.TrimSpace(paper.Source.Name)
+		if name != "" {
+			return name
+		}
+	}
+	if paper.SourceID > 0 {
+		return fmt.Sprintf("source:%d", paper.SourceID)
+	}
+	return "unknown"
 }
