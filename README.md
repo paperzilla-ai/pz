@@ -139,7 +139,7 @@ This prints a URL with an embedded feed token. Paste it into your feed reader to
 
 ## Documentation
 
-Full docs available at [docs/](docs/).
+Full docs available at [docs.paperzilla.ai](https://docs.paperzilla.ai/guides/cli-getting-started).
 
 ## License
 
