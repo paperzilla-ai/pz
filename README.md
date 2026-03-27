@@ -53,6 +53,12 @@ List your projects:
 pz project list
 ```
 
+Show a single paper:
+
+```bash
+pz paper <paper-or-feed-id>
+```
+
 Browse your feed:
 
 ```bash

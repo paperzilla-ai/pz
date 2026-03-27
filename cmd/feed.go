@@ -11,7 +11,6 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(feedCmd)
 	feedCmd.Flags().BoolP("json", "j", false, "Output as JSON")
 	feedCmd.Flags().BoolP("must-read", "m", false, "Only show must-read papers")
 	feedCmd.Flags().StringP("since", "s", "", "Only papers ready after this date")

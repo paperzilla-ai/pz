@@ -9,7 +9,6 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(projectCmd)
 	projectCmd.AddCommand(projectListCmd)
 }
 

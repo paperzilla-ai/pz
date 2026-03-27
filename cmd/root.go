@@ -17,10 +17,16 @@ var rootCmd = &cobra.Command{
 	Example: `  pz login
   pz project list
   pz project <id>
+  pz paper <id>
   pz feed <id>
   pz feed <id> --must-read --limit 5
   pz feed <id> --json
   pz feed <id> --atom`,
+}
+
+func init() {
+	cobra.EnableCommandSorting = false
+	rootCmd.AddCommand(loginCmd, projectCmd, paperCmd, feedCmd)
 }
 
 func Execute() {

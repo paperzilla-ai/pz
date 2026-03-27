@@ -66,6 +66,62 @@ Interest:
 
 ---
 
+## pz paper \<id\>
+
+Show details for a single paper. `id` may be the full paper UUID, the paper 8-character `short_id`, or a feed item identifier returned by `pz feed --json`. If a `short_id` is ambiguous, use the full UUID.
+
+```bash
+pz paper abc12345
+```
+
+### Flags
+
+| Flag | Short | Type | Description |
+|------|-------|------|-------------|
+| `--json` | `-j` | bool | Output the full paper as JSON |
+
+### Default output
+
+```
+Title:           A Novel Approach to Transformer Efficiency
+ID:              550e8400-e29b-41d4-a716-446655440000
+Short ID:        abc12345
+Slug:            a-novel-approach
+Source:          arxiv
+Published:       2025-07-20
+Authors:         Jane Smith, John Chen
+URL:             https://example.org/paper
+PDF URL:         https://example.org/paper.pdf
+DOI:             10.1234/example
+Source Paper ID: 2507.12345
+
+Abstract:
+  We present...
+```
+
+### JSON output
+
+```json
+{
+  "id": "uuid",
+  "title": "A Novel Approach to...",
+  "abstract": "We present...",
+  "authors": [{"name": "Jane Smith"}],
+  "published_date": "2025-07-20",
+  "pdf_url": "https://...",
+  "url": "https://...",
+  "doi": "10.1234/...",
+  "source_id": 1,
+  "source": {"name": "arxiv"},
+  "source_paper_id": "2507.12345",
+  "short_id": "abc12345",
+  "slug": "a-novel-approach",
+  "metadata": {}
+}
+```
+
+---
+
 ## pz feed \<project-id\>
 
 Show the curated paper feed for a project.

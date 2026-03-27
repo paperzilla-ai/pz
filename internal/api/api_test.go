@@ -198,6 +198,47 @@ func TestFetchProjectNotFound(t *testing.T) {
 	}
 }
 
+func TestFetchPaper(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/papers/paper-1" {
+			t.Errorf("path = %s, want /api/papers/paper-1", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer my_token" {
+			t.Errorf("Authorization = %q", r.Header.Get("Authorization"))
+		}
+
+		json.NewEncoder(w).Encode(map[string]any{
+			"id": "paper-1", "title": "Test Paper", "short_id": "abc12345",
+			"source": map[string]any{"name": "arxiv"},
+		})
+	})
+	defer server.Close()
+
+	paper, err := FetchPaper("my_token", "paper-1")
+	if err != nil {
+		t.Fatalf("FetchPaper: %v", err)
+	}
+	if paper.ID != "paper-1" {
+		t.Errorf("ID = %q", paper.ID)
+	}
+	if paper.Source == nil || paper.Source.Name != "arxiv" {
+		t.Errorf("Source.Name = %#v, want %q", paper.Source, "arxiv")
+	}
+}
+
+func TestFetchPaperNotFound(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"detail":"Paper not found"}`))
+	})
+	defer server.Close()
+
+	_, err := FetchPaper("my_token", "missing")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 // --- Feed tests ---
 
 func TestFetchFeed(t *testing.T) {
