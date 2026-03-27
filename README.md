@@ -41,6 +41,38 @@ go build -o pz .
 mv pz /usr/local/bin/
 ```
 
+## Update
+
+### macOS
+
+```bash
+brew update
+brew upgrade pz
+```
+
+### Windows
+
+```bash
+scoop update pz
+```
+
+### Linux
+
+If you installed from GitHub Releases, download the latest binary again:
+
+```bash
+curl -sL https://github.com/paperzilla-ai/pz/releases/latest/download/pz_linux_amd64.tar.gz | tar xz
+sudo mv pz /usr/local/bin/
+```
+
+If you installed from source, pull the latest code and rebuild:
+
+```bash
+git pull
+go build -o pz .
+sudo mv pz /usr/local/bin/
+```
+
 ## Usage
 
 Log in with your Paperzilla account:
