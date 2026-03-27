@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 
 func init() {
 	paperCmd.Flags().BoolP("json", "j", false, "Output as JSON")
+	paperCmd.Flags().Bool("markdown", false, "Print raw markdown")
 }
 
 var paperCmd = &cobra.Command{
@@ -23,6 +25,28 @@ var paperCmd = &cobra.Command{
 			return err
 		}
 
+		jsonOut, _ := cmd.Flags().GetBool("json")
+		markdownOut, _ := cmd.Flags().GetBool("markdown")
+		if jsonOut && markdownOut {
+			return fmt.Errorf("--json and --markdown cannot be used together")
+		}
+
+		if markdownOut {
+			markdown, err := withAuth(&tokens, func(at string) (string, error) {
+				return api.FetchPaperMarkdown(at, args[0])
+			})
+			if err != nil {
+				var pending *api.PaperMarkdownPendingError
+				if errors.As(err, &pending) {
+					fmt.Println(pending.FriendlyMessage())
+					return nil
+				}
+				return fmt.Errorf("failed to fetch paper markdown: %w", err)
+			}
+			fmt.Print(markdown)
+			return nil
+		}
+
 		paper, err := withAuth(&tokens, func(at string) (api.Paper, error) {
 			return api.FetchPaper(at, args[0])
 		})
@@ -30,7 +54,6 @@ var paperCmd = &cobra.Command{
 			return fmt.Errorf("failed to fetch paper: %w", err)
 		}
 
-		jsonOut, _ := cmd.Flags().GetBool("json")
 		if jsonOut {
 			data, err := json.MarshalIndent(paper, "", "  ")
 			if err != nil {

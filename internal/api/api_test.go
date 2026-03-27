@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -236,6 +237,83 @@ func TestFetchPaperNotFound(t *testing.T) {
 	_, err := FetchPaper("my_token", "missing")
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestFetchPaperMarkdown(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/papers/paper-1/markdown" {
+			t.Errorf("path = %s, want /api/papers/paper-1/markdown", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer my_token" {
+			t.Errorf("Authorization = %q", r.Header.Get("Authorization"))
+		}
+
+		w.Write([]byte("# Test Paper\n\nHello markdown.\n"))
+	})
+	defer server.Close()
+
+	markdown, err := FetchPaperMarkdown("my_token", "paper-1")
+	if err != nil {
+		t.Fatalf("FetchPaperMarkdown: %v", err)
+	}
+	if markdown != "# Test Paper\n\nHello markdown.\n" {
+		t.Fatalf("markdown = %q", markdown)
+	}
+}
+
+func TestFetchPaperMarkdownNotFound(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"detail":"Paper markdown not found"}`))
+	})
+	defer server.Close()
+
+	_, err := FetchPaperMarkdown("my_token", "missing")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestFetchPaperMarkdownQueued(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"detail":"Markdown queued","code":"markdown_queued","job_id":"job-1","created":true}`))
+	})
+	defer server.Close()
+
+	_, err := FetchPaperMarkdown("my_token", "paper-1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var pending *PaperMarkdownPendingError
+	if !errors.As(err, &pending) {
+		t.Fatalf("err = %v, want PaperMarkdownPendingError", err)
+	}
+	if pending.Code != "markdown_queued" {
+		t.Fatalf("Code = %q", pending.Code)
+	}
+}
+
+func TestFetchPaperMarkdownAlreadyQueued(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"detail":"Markdown already queued","code":"markdown_already_queued","job_id":"job-1","created":false}`))
+	})
+	defer server.Close()
+
+	_, err := FetchPaperMarkdown("my_token", "paper-1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var pending *PaperMarkdownPendingError
+	if !errors.As(err, &pending) {
+		t.Fatalf("err = %v, want PaperMarkdownPendingError", err)
+	}
+	if pending.Code != "markdown_already_queued" {
+		t.Fatalf("Code = %q", pending.Code)
 	}
 }
 
