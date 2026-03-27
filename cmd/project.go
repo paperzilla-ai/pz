@@ -71,7 +71,7 @@ var projectListCmd = &cobra.Command{
 		}
 
 		if len(projects) == 0 {
-			fmt.Println("No projects found.")
+			fmt.Printf("No projects found. Create your first project: %s\n", cliGettingStartedURL)
 			return nil
 		}
 

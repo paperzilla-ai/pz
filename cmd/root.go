@@ -10,9 +10,15 @@ import (
 // Version is set by goreleaser via ldflags.
 var Version = "dev"
 
+const (
+	cliGettingStartedURL = "https://docs.paperzilla.ai/guides/cli-getting-started"
+	cliDocsURL           = "https://docs.paperzilla.ai/guides/cli"
+)
+
 var rootCmd = &cobra.Command{
 	Use:     "pz",
 	Short:   "Paperzilla CLI",
+	Long:    "Paperzilla CLI\n\nGet started: " + cliGettingStartedURL + "\nCommand reference: " + cliDocsURL,
 	Version: Version,
 	Example: `  pz login
   pz project list

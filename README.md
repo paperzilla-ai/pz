@@ -2,6 +2,8 @@
 
 A command-line tool for [Paperzilla](https://paperzilla.ai), an AI-powered scientific paper discovery platform. Browse your curated research feed, manage projects, and stay on top of new papers — all from the terminal.
 
+New to `pz`? Start here: [docs.paperzilla.ai/guides/cli-getting-started](https://docs.paperzilla.ai/guides/cli-getting-started)
+
 ## Install
 
 ### macOS
