@@ -12,6 +12,12 @@ import (
 	"github.com/paperzilla/pz/internal/config"
 )
 
+var (
+	loginFunc              = runLogin
+	refreshAccessTokenFunc = api.RefreshAccessToken
+	saveTokensFunc         = config.SaveTokens
+)
+
 func runLogin() (config.Tokens, error) {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -45,35 +51,63 @@ func loadAuth() (config.Tokens, error) {
 	tokens, err := config.LoadTokens()
 	if err != nil {
 		fmt.Println("Not logged in.")
-		return runLogin()
+		return loginFunc()
 	}
 
 	if time.Now().Unix() >= tokens.ExpiresAt {
-		tokens, err = api.RefreshAccessToken(tokens.RefreshToken)
-		if err != nil {
+		if err := refreshSession(&tokens); err != nil {
 			fmt.Fprintf(os.Stderr, "Token refresh failed: %v\n", err)
-			return runLogin()
-		}
-		if err := config.SaveTokens(tokens); err != nil {
-			return config.Tokens{}, fmt.Errorf("failed to save refreshed tokens: %w", err)
+			if err := reauthenticate(&tokens); err != nil {
+				return config.Tokens{}, err
+			}
 		}
 	}
 
 	return tokens, nil
 }
 
-// withAuth calls fn with the current access token. On 401 it re-logins and retries once.
+// withAuth calls fn with the current access token. On 401 it attempts a refresh,
+// then falls back to OTP login if refresh also fails.
 func withAuth[T any](tokens *config.Tokens, fn func(string) (T, error)) (T, error) {
 	result, err := fn(tokens.AccessToken)
 	if errors.Is(err, api.ErrUnauthorized) {
+		if refreshErr := refreshSession(tokens); refreshErr == nil {
+			return fn(tokens.AccessToken)
+		}
+
 		fmt.Println("Session expired. Please log in again.")
-		newTokens, loginErr := runLogin()
-		if loginErr != nil {
+		if loginErr := reauthenticate(tokens); loginErr != nil {
 			var zero T
 			return zero, loginErr
 		}
-		*tokens = newTokens
 		return fn(tokens.AccessToken)
 	}
 	return result, err
+}
+
+func refreshSession(tokens *config.Tokens) error {
+	if tokens.RefreshToken == "" {
+		return errors.New("missing refresh token")
+	}
+
+	newTokens, err := refreshAccessTokenFunc(tokens.RefreshToken)
+	if err != nil {
+		return err
+	}
+	if err := saveTokensFunc(newTokens); err != nil {
+		return fmt.Errorf("failed to save refreshed tokens: %w", err)
+	}
+
+	*tokens = newTokens
+	return nil
+}
+
+func reauthenticate(tokens *config.Tokens) error {
+	newTokens, err := loginFunc()
+	if err != nil {
+		return err
+	}
+
+	*tokens = newTokens
+	return nil
 }
