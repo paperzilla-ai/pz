@@ -53,11 +53,15 @@ List your projects:
 pz project list
 ```
 
-Show a single paper:
+Show a single paper or feed item:
 
 ```bash
 pz paper <paper-or-feed-id>
+pz paper <paper-or-feed-id> --json
+pz paper <paper-or-feed-id> --markdown
 ```
+
+`--markdown` prints raw paper markdown to stdout. If the markdown is still being prepared, `pz` prints a friendly message and asks you to try again in a minute or so.
 
 Browse your feed:
 

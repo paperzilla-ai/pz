@@ -78,12 +78,24 @@ pz paper abc12345
 pz paper 33403e66-bfc3-43e7-a849-14b03341201e --markdown
 ```
 
+`--markdown` prints the raw paper markdown to stdout. `--json` and `--markdown` cannot be used together.
+
 ### Flags
 
 | Flag | Short | Type | Description |
 |------|-------|------|-------------|
 | `--json` | `-j` | bool | Output the full paper as JSON |
 | `--markdown` | | bool | Print raw paper markdown to stdout |
+
+### Markdown output
+
+When markdown is ready, the command prints the raw markdown body directly to stdout.
+
+If markdown generation has been queued already, the CLI prints:
+
+```text
+Markdown is being prepared. Try again in a minute or so.
+```
 
 ### Default output
 
