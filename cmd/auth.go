@@ -48,6 +48,10 @@ func runLogin() (config.Tokens, error) {
 }
 
 func loadAuth() (config.Tokens, error) {
+	return loadRequiredAuth()
+}
+
+func loadRequiredAuth() (config.Tokens, error) {
 	tokens, err := config.LoadTokens()
 	if err != nil {
 		fmt.Println("Not logged in.")
@@ -64,6 +68,21 @@ func loadAuth() (config.Tokens, error) {
 	}
 
 	return tokens, nil
+}
+
+func loadOptionalAuth() (config.Tokens, bool, error) {
+	tokens, err := config.LoadTokens()
+	if err != nil {
+		return config.Tokens{}, false, nil
+	}
+
+	if time.Now().Unix() >= tokens.ExpiresAt {
+		if err := refreshSession(&tokens); err != nil {
+			return config.Tokens{}, false, nil
+		}
+	}
+
+	return tokens, true, nil
 }
 
 // withAuth calls fn with the current access token. On 401 it attempts a refresh,
@@ -83,6 +102,26 @@ func withAuth[T any](tokens *config.Tokens, fn func(string) (T, error)) (T, erro
 		return fn(tokens.AccessToken)
 	}
 	return result, err
+}
+
+func withOptionalAuth[T any](tokens *config.Tokens, hasAuth bool, fn func(string) (T, error)) (T, bool, error) {
+	var zero T
+	if !hasAuth {
+		return zero, false, nil
+	}
+
+	result, err := fn(tokens.AccessToken)
+	if errors.Is(err, api.ErrUnauthorized) {
+		if refreshErr := refreshSession(tokens); refreshErr != nil {
+			return zero, false, nil
+		}
+		result, err = fn(tokens.AccessToken)
+	}
+	if errors.Is(err, api.ErrUnauthorized) {
+		return zero, false, nil
+	}
+
+	return result, true, err
 }
 
 func refreshSession(tokens *config.Tokens) error {

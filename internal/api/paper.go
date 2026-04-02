@@ -2,14 +2,33 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-	"net/http"
-
-	"github.com/paperzilla/pz/internal/config"
 )
 
+func FetchPublicPaper(id string) (Paper, error) {
+	path := fmt.Sprintf("/api/public/papers/%s", id)
+	body, err := doRequest("GET", path, nil, "")
+	if err != nil {
+		return Paper{}, err
+	}
+
+	var paper Paper
+	if err := json.Unmarshal(body, &paper); err != nil {
+		return Paper{}, err
+	}
+
+	return paper, nil
+}
+
+// FetchPaper is the legacy authenticated paper lookup used as a temporary
+// compatibility path while the CLI migrates to explicit public/project-paper
+// endpoints.
 func FetchPaper(accessToken, id string) (Paper, error) {
+	return FetchLegacyPaper(accessToken, id)
+}
+
+func FetchLegacyPaper(accessToken, id string) (Paper, error) {
 	path := fmt.Sprintf("/api/papers/%s", id)
 	body, err := doRequest("GET", path, nil, accessToken)
 	if err != nil {
@@ -24,38 +43,33 @@ func FetchPaper(accessToken, id string) (Paper, error) {
 	return paper, nil
 }
 
+// FetchPaperMarkdown is the legacy authenticated markdown lookup used as a
+// temporary compatibility path while the CLI migrates to explicit
+// public/project-paper endpoints.
 func FetchPaperMarkdown(accessToken, id string) (string, error) {
-	path := fmt.Sprintf("/api/papers/%s/markdown", id)
-	req, err := http.NewRequest(http.MethodGet, config.APIURL()+path, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if accessToken != "" {
-		req.Header.Set("Authorization", "Bearer "+accessToken)
-	}
+	return FetchLegacyPaperMarkdown(accessToken, id)
+}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
+func FetchPublicPaperMarkdown(id string) (string, error) {
+	return fetchMarkdown(fmt.Sprintf("/api/public/papers/%s/markdown", id), "")
+}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
+func FetchLegacyPaperMarkdown(accessToken, id string) (string, error) {
+	return fetchMarkdown(fmt.Sprintf("/api/papers/%s/markdown", id), accessToken)
+}
 
-	if resp.StatusCode == http.StatusUnauthorized {
-		return "", ErrUnauthorized
+func fetchMarkdown(path, accessToken string) (string, error) {
+	body, _, err := doRequestDetailed("GET", path, nil, accessToken)
+	if errors.Is(err, ErrUnauthorized) {
+		return "", err
 	}
 
 	if pending := parsePaperMarkdownPending(body); pending != nil {
 		return "", pending
 	}
 
-	if resp.StatusCode >= 400 {
-		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	if err != nil {
+		return "", err
 	}
 
 	return string(body), nil

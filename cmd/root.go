@@ -24,7 +24,10 @@ var rootCmd = &cobra.Command{
   pz update
   pz project list
   pz project <id>
-  pz paper <id>
+  pz paper <paper-id>
+  pz paper <paper-id> --project <project-id>
+  pz rec <project-paper-id>
+  pz feedback <project-paper-id> upvote
   pz feed <id>
   pz feed <id> --must-read --limit 5
   pz feed <id> --json
@@ -33,7 +36,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	cobra.EnableCommandSorting = false
-	rootCmd.AddCommand(loginCmd, updateCmd, projectCmd, paperCmd, feedCmd)
+	rootCmd.AddCommand(loginCmd, updateCmd, projectCmd, paperCmd, recCmd, feedbackCmd, feedCmd)
 }
 
 func Execute() {

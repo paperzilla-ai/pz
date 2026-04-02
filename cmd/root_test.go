@@ -28,4 +28,13 @@ func TestRootHelpLinksToGettingStartedDocs(t *testing.T) {
 	if !strings.Contains(output, cliDocsURL) {
 		t.Fatalf("help output missing CLI docs URL: %s", output)
 	}
+	if !strings.Contains(output, "pz paper <paper-id> --project <project-id>") {
+		t.Fatalf("help output missing project-scoped paper example: %s", output)
+	}
+	if !strings.Contains(output, "pz rec <project-paper-id>") {
+		t.Fatalf("help output missing rec example: %s", output)
+	}
+	if !strings.Contains(output, "pz feedback <project-paper-id> upvote") {
+		t.Fatalf("help output missing feedback example: %s", output)
+	}
 }

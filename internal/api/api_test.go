@@ -240,6 +240,34 @@ func TestFetchPaperNotFound(t *testing.T) {
 	}
 }
 
+func TestFetchPublicPaper(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/public/papers/paper-1" {
+			t.Errorf("path = %s, want /api/public/papers/paper-1", r.URL.Path)
+		}
+		if got := r.Header.Get("Authorization"); got != "" {
+			t.Errorf("Authorization = %q, want empty", got)
+		}
+
+		json.NewEncoder(w).Encode(map[string]any{
+			"id": "paper-1", "title": "Public Paper", "short_id": "abc12345",
+			"markdown_ready": true,
+		})
+	})
+	defer server.Close()
+
+	paper, err := FetchPublicPaper("paper-1")
+	if err != nil {
+		t.Fatalf("FetchPublicPaper: %v", err)
+	}
+	if paper.ID != "paper-1" {
+		t.Errorf("ID = %q", paper.ID)
+	}
+	if !paper.MarkdownReady {
+		t.Errorf("MarkdownReady = false, want true")
+	}
+}
+
 func TestFetchPaperMarkdown(t *testing.T) {
 	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/papers/paper-1/markdown" {
@@ -259,6 +287,49 @@ func TestFetchPaperMarkdown(t *testing.T) {
 	}
 	if markdown != "# Test Paper\n\nHello markdown.\n" {
 		t.Fatalf("markdown = %q", markdown)
+	}
+}
+
+func TestFetchPublicPaperMarkdown(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/public/papers/paper-1/markdown" {
+			t.Errorf("path = %s, want /api/public/papers/paper-1/markdown", r.URL.Path)
+		}
+		if got := r.Header.Get("Authorization"); got != "" {
+			t.Errorf("Authorization = %q, want empty", got)
+		}
+
+		w.Write([]byte("# Public Markdown\n"))
+	})
+	defer server.Close()
+
+	markdown, err := FetchPublicPaperMarkdown("paper-1")
+	if err != nil {
+		t.Fatalf("FetchPublicPaperMarkdown: %v", err)
+	}
+	if markdown != "# Public Markdown\n" {
+		t.Fatalf("markdown = %q", markdown)
+	}
+}
+
+func TestFetchPublicPaperMarkdownNotReady(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(409)
+		w.Write([]byte(`{"detail":"Markdown is not ready for this paper","code":"markdown_not_ready"}`))
+	})
+	defer server.Close()
+
+	_, err := FetchPublicPaperMarkdown("paper-1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("err = %v, want APIError", err)
+	}
+	if apiErr.StatusCode != 409 || apiErr.Code != "markdown_not_ready" {
+		t.Fatalf("APIError = %#v", apiErr)
 	}
 }
 
@@ -337,6 +408,7 @@ func TestFetchFeed(t *testing.T) {
 						"source_id": 1,
 						"source":    map[string]any{"name": "arxiv"},
 					},
+					"feedback": map[string]any{"vote": "star"},
 				},
 			},
 			"total": 1, "limit": 20, "offset": 0,
@@ -359,6 +431,9 @@ func TestFetchFeed(t *testing.T) {
 	}
 	if feed.Items[0].Paper.Source == nil || feed.Items[0].Paper.Source.Name != "arxiv" {
 		t.Errorf("Source.Name = %#v, want %q", feed.Items[0].Paper.Source, "arxiv")
+	}
+	if feed.Items[0].Feedback == nil || feed.Items[0].Feedback.Vote != "star" {
+		t.Errorf("Feedback = %#v, want star", feed.Items[0].Feedback)
 	}
 }
 
@@ -441,5 +516,94 @@ func TestFetchFeedNoOptionalParams(t *testing.T) {
 	_, err := FetchFeed("my_token", "proj-1", FeedOptions{})
 	if err != nil {
 		t.Fatalf("FetchFeed: %v", err)
+	}
+}
+
+func TestFetchProjectPaper(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/project-papers/feedbeef" {
+			t.Errorf("path = %s, want /api/project-papers/feedbeef", r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":          "pp-1",
+			"short_id":    "feedbeef",
+			"paper_title": "Recommendation",
+			"feedback":    map[string]any{"vote": "upvote"},
+			"paper":       map[string]any{"id": "paper-1", "title": "Recommendation"},
+		})
+	})
+	defer server.Close()
+
+	projectPaper, err := FetchProjectPaper("my_token", "feedbeef")
+	if err != nil {
+		t.Fatalf("FetchProjectPaper: %v", err)
+	}
+	if projectPaper.ID != "pp-1" {
+		t.Fatalf("ID = %q", projectPaper.ID)
+	}
+	if projectPaper.Feedback == nil || projectPaper.Feedback.Vote != "upvote" {
+		t.Fatalf("Feedback = %#v", projectPaper.Feedback)
+	}
+}
+
+func TestFetchProjectPaperForProject(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/projects/proj-1/papers/paper-1" {
+			t.Errorf("path = %s, want /api/projects/proj-1/papers/paper-1", r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":          "pp-1",
+			"paper_title": "Recommendation",
+			"paper":       map[string]any{"id": "paper-1", "title": "Recommendation"},
+		})
+	})
+	defer server.Close()
+
+	projectPaper, err := FetchProjectPaperForProject("my_token", "proj-1", "paper-1")
+	if err != nil {
+		t.Fatalf("FetchProjectPaperForProject: %v", err)
+	}
+	if projectPaper.ID != "pp-1" {
+		t.Fatalf("ID = %q", projectPaper.ID)
+	}
+}
+
+func TestSetProjectPaperFeedback(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Fatalf("method = %s, want PUT", r.Method)
+		}
+		if r.URL.Path != "/api/project-papers/feedbeef/feedback" {
+			t.Fatalf("path = %s", r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(map[string]any{
+			"vote": "downvote", "downvote_reason": "not_relevant", "updated_at": "2026-04-02T10:00:00Z",
+		})
+	})
+	defer server.Close()
+
+	feedback, err := SetProjectPaperFeedback("my_token", "feedbeef", "downvote", "not_relevant")
+	if err != nil {
+		t.Fatalf("SetProjectPaperFeedback: %v", err)
+	}
+	if feedback.Vote != "downvote" || feedback.DownvoteReason != "not_relevant" {
+		t.Fatalf("Feedback = %#v", feedback)
+	}
+}
+
+func TestClearProjectPaperFeedback(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Fatalf("method = %s, want DELETE", r.Method)
+		}
+		if r.URL.Path != "/api/project-papers/feedbeef/feedback" {
+			t.Fatalf("path = %s", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	if err := ClearProjectPaperFeedback("my_token", "feedbeef"); err != nil {
+		t.Fatalf("ClearProjectPaperFeedback: %v", err)
 	}
 }

@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/paperzilla/pz/internal/api"
 	"github.com/paperzilla/pz/internal/config"
@@ -23,6 +22,7 @@ var feedCmd = &cobra.Command{
 	Short: "Show relevant curated papers for a project",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		out := cmd.OutOrStdout()
 		tokens, err := loadAuth()
 		if err != nil {
 			return err
@@ -38,7 +38,7 @@ var feedCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to get feed token: %w", err)
 			}
-			fmt.Printf("%s/api/feed/atom/%s?token=%s\n", config.APIURL(), projectID, tokenResp.Token)
+			fmt.Fprintf(out, "%s/api/feed/atom/%s?token=%s\n", config.APIURL(), projectID, tokenResp.Token)
 			return nil
 		}
 
@@ -65,7 +65,7 @@ var feedCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to marshal JSON: %w", err)
 			}
-			fmt.Println(string(data))
+			fmt.Fprintln(out, string(data))
 			return nil
 		}
 
@@ -76,12 +76,15 @@ var feedCmd = &cobra.Command{
 			return fmt.Errorf("failed to fetch project: %w", err)
 		}
 
-		fmt.Printf("%s — %d papers (total: %d)\n\n", project.Name, len(feed.Items), feed.Total)
+		fmt.Fprintf(out, "%s — %d papers (total: %d)\n\n", project.Name, len(feed.Items), feed.Total)
 
 		for _, p := range feed.Items {
-			icon := "○ Related"
+			prefix := "○ Related"
 			if p.RelevanceClass == 2 {
-				icon = "★ Must Read"
+				prefix = "★ Must Read"
+			}
+			if marker := feedbackMarker(p.Feedback); marker != "" {
+				prefix += " " + marker
 			}
 
 			title := p.PaperTitle
@@ -89,42 +92,16 @@ var feedCmd = &cobra.Command{
 				title = title[:77] + "..."
 			}
 
-			fmt.Printf("%s  %s\n", icon, title)
+			fmt.Fprintf(out, "%s  %s\n", prefix, title)
 
 			surname := firstAuthorSurname(p.Paper.Authors)
 			source := sourceLabel(p.Paper)
 			date := formatTime(p.Paper.PublishedDate)
 			score := int(p.RelevanceScore * 100)
 
-			fmt.Printf("  %s · %s · %s · relevance: %d%%\n\n", surname, source, date, score)
+			fmt.Fprintf(out, "  %s · %s · %s · relevance: %d%%\n\n", surname, source, date, score)
 		}
 
 		return nil
 	},
-}
-
-func firstAuthorSurname(authors []api.Author) string {
-	if len(authors) == 0 {
-		return "Unknown"
-	}
-	name := authors[0].Name
-	parts := strings.Fields(name)
-	surname := parts[len(parts)-1]
-	if len(authors) > 1 {
-		return surname + " et al."
-	}
-	return surname
-}
-
-func sourceLabel(paper api.Paper) string {
-	if paper.Source != nil {
-		name := strings.TrimSpace(paper.Source.Name)
-		if name != "" {
-			return name
-		}
-	}
-	if paper.SourceID > 0 {
-		return fmt.Sprintf("source:%d", paper.SourceID)
-	}
-	return "unknown"
 }

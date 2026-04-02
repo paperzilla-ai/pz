@@ -14,6 +14,12 @@ type Source struct {
 	Name string `json:"name"`
 }
 
+type Feedback struct {
+	Vote           string `json:"vote"`
+	DownvoteReason string `json:"downvote_reason"`
+	UpdatedAt      string `json:"updated_at"`
+}
+
 type Paper struct {
 	ID            string   `json:"id"`
 	Title         string   `json:"title"`
@@ -29,28 +35,32 @@ type Paper struct {
 	ShortID       string   `json:"short_id"`
 	Slug          string   `json:"slug"`
 	Metadata      any      `json:"metadata"`
+	MarkdownReady bool     `json:"markdown_ready"`
 }
 
-type FeedPaper struct {
-	ID               string  `json:"id"`
-	ShortID          string  `json:"short_id"`
-	Slug             string  `json:"slug"`
-	PaperTitle       string  `json:"paper_title"`
-	Summary          string  `json:"summary"`
-	RelevanceScore   float64 `json:"relevance_score"`
-	RelevanceClass   int     `json:"relevance_class"`
-	CombinedScore    float64 `json:"combined_score"`
-	MatchingDetails  any     `json:"matching_details"`
-	PersonalizedNote string  `json:"personalized_note"`
-	ReadyAt          string  `json:"ready_at"`
-	Paper            Paper   `json:"paper"`
+type ProjectPaper struct {
+	ID               string    `json:"id"`
+	ShortID          string    `json:"short_id"`
+	Slug             string    `json:"slug"`
+	PaperTitle       string    `json:"paper_title"`
+	Summary          string    `json:"summary"`
+	RelevanceScore   float64   `json:"relevance_score"`
+	RelevanceClass   int       `json:"relevance_class"`
+	CombinedScore    float64   `json:"combined_score"`
+	MatchingDetails  any       `json:"matching_details"`
+	PersonalizedNote string    `json:"personalized_note"`
+	ReadyAt          string    `json:"ready_at"`
+	Feedback         *Feedback `json:"feedback"`
+	Paper            Paper     `json:"paper"`
 }
+
+type FeedPaper = ProjectPaper
 
 type FeedResponse struct {
-	Items  []FeedPaper `json:"items"`
-	Total  int         `json:"total"`
-	Limit  int         `json:"limit"`
-	Offset int         `json:"offset"`
+	Items  []ProjectPaper `json:"items"`
+	Total  int            `json:"total"`
+	Limit  int            `json:"limit"`
+	Offset int            `json:"offset"`
 }
 
 type FeedOptions struct {
