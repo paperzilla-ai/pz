@@ -21,6 +21,7 @@ var rootCmd = &cobra.Command{
 	Long:    "Paperzilla CLI\n\nGet started: " + cliGettingStartedURL + "\nCommand reference: " + cliDocsURL,
 	Version: Version,
 	Example: `  pz login
+  pz update
   pz project list
   pz project <id>
   pz paper <id>
@@ -32,12 +33,15 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	cobra.EnableCommandSorting = false
-	rootCmd.AddCommand(loginCmd, projectCmd, paperCmd, feedCmd)
+	rootCmd.AddCommand(loginCmd, updateCmd, projectCmd, paperCmd, feedCmd)
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	executedCmd, err := rootCmd.ExecuteC()
+	if err == nil {
+		maybePrintUpdateNotice(executedCmd, os.Stderr)
+		return
 	}
+	fmt.Fprintln(os.Stderr, err)
+	os.Exit(1)
 }

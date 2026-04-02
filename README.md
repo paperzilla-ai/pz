@@ -43,6 +43,32 @@ mv pz /usr/local/bin/
 
 ## Update
 
+Run `pz update` to check whether your CLI is on the latest release and see upgrade instructions based on how it was installed.
+
+```bash
+pz update
+```
+
+`pz update` auto-detects common install methods:
+
+- Homebrew
+- Scoop
+- GitHub release binaries
+- Source builds
+
+If detection is ambiguous, override it explicitly:
+
+```bash
+pz update --install-method homebrew
+pz update --install-method scoop
+pz update --install-method release
+pz update --install-method source
+```
+
+Supported values are `auto`, `homebrew`, `scoop`, `release`, and `source`.
+
+On interactive terminals, `pz` also prints a colored footer after successful commands when you are behind the latest release, with a prompt to run `pz update`.
+
 ### macOS
 
 ```bash
