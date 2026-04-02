@@ -1,6 +1,6 @@
 # Paperzilla CLI
 
-A command-line tool for [Paperzilla](https://paperzilla.ai), an AI-powered scientific paper discovery platform. Browse your curated research feed, manage projects, and stay on top of new papers — all from the terminal.
+A command-line tool for [Paperzilla](https://paperzilla.ai), an AI-powered scientific paper discovery platform. Read canonical papers, browse project recommendations, manage projects, and stay on top of new papers from the terminal.
 
 New to `pz`? Start here: [docs.paperzilla.ai/guides/cli-getting-started](https://docs.paperzilla.ai/guides/cli-getting-started)
 
@@ -113,15 +113,38 @@ List your projects:
 pz project list
 ```
 
-Show a single paper or feed item:
+Read a canonical paper by Paperzilla paper ID:
 
 ```bash
-pz paper <paper-or-feed-id>
-pz paper <paper-or-feed-id> --json
-pz paper <paper-or-feed-id> --markdown
+pz paper <paper-id>
+pz paper <paper-id> --json
+pz paper <paper-id> --markdown
 ```
 
-`--markdown` prints raw paper markdown to stdout. If the markdown is still being prepared, `pz` prints a friendly message and asks you to try again in a minute or so.
+Show that paper in the context of one of your projects:
+
+```bash
+pz paper <paper-id> --project <project-id>
+```
+
+Open a recommendation from your feed:
+
+```bash
+pz rec <project-paper-id>
+pz rec <project-paper-id> --json
+pz rec <project-paper-id> --markdown
+```
+
+Leave recommendation feedback:
+
+```bash
+pz feedback <project-paper-id> upvote
+pz feedback <project-paper-id> star
+pz feedback <project-paper-id> downvote --reason not_relevant
+pz feedback clear <project-paper-id>
+```
+
+Canonical `pz paper --markdown` only returns markdown when it is already prepared. `pz rec --markdown` can queue markdown generation and prints a friendly message if it is still being prepared.
 
 Browse your feed:
 
@@ -132,12 +155,18 @@ pz feed <project-id>
 ```
 Machine Learning Papers — 12 papers (total: 142)
 
-★ Must Read  A Novel Approach to Transformer Efficiency
+★ Must Read [★]  A Novel Approach to Transformer Efficiency
   Smith et al. · arxiv · 2025-08-01 · relevance: 92%
 
-○ Related  On the Convergence Properties of Diffusion Models
+○ Related [↓]  On the Convergence Properties of Diffusion Models
   Chen et al. · arxiv · 2025-07-30 · relevance: 74%
 ```
+
+Recommendations can show existing feedback inline:
+
+- `[↑]` upvote
+- `[↓]` downvote
+- `[★]` star
 
 Filter and export:
 
