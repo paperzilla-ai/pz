@@ -95,11 +95,16 @@ var feedCmd = &cobra.Command{
 			fmt.Fprintf(out, "%s  %s\n", prefix, title)
 
 			surname := firstAuthorSurname(p.Paper.Authors)
-			source := sourceLabel(p.Paper)
 			date := formatTime(p.Paper.PublishedDate)
 			score := int(p.RelevanceScore * 100)
+			meta := joinDisplayParts(
+				surname,
+				paperListLabel(p.Paper),
+				date,
+				fmt.Sprintf("relevance: %d%%", score),
+			)
 
-			fmt.Fprintf(out, "  %s · %s · %s · relevance: %d%%\n\n", surname, source, date, score)
+			fmt.Fprintf(out, "  %s\n\n", meta)
 		}
 
 		return nil

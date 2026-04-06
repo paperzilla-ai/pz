@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -14,21 +13,17 @@ func writeCanonicalPaper(w io.Writer, paper api.Paper) {
 	fmt.Fprintf(w, "ID:              %s\n", displayValue(paper.ID))
 	fmt.Fprintf(w, "Short ID:        %s\n", displayValue(paper.ShortID))
 	fmt.Fprintf(w, "Slug:            %s\n", displayValue(paper.Slug))
-	fmt.Fprintf(w, "Source:          %s\n", sourceLabel(paper))
+	if label := paperDetailLabel(paper); label != "" {
+		fmt.Fprintf(w, "Source:          %s\n", label)
+	}
 	fmt.Fprintf(w, "Published:       %s\n", formatTime(paper.PublishedDate))
 	fmt.Fprintf(w, "Authors:         %s\n", displayValue(authorNames(paper.Authors)))
 	fmt.Fprintf(w, "URL:             %s\n", displayValue(paper.URL))
 	fmt.Fprintf(w, "PDF URL:         %s\n", displayValue(paper.PdfURL))
 	fmt.Fprintf(w, "DOI:             %s\n", displayValue(paper.DOI))
-	fmt.Fprintf(w, "Source Paper ID: %s\n", displayValue(paper.SourcePaperID))
 
 	if strings.TrimSpace(paper.Abstract) != "" {
 		fmt.Fprintf(w, "\nAbstract:\n  %s\n", paper.Abstract)
-	}
-
-	metadata := formatMetadata(paper.Metadata)
-	if metadata != "" {
-		fmt.Fprintf(w, "\nMetadata:\n%s\n", metadata)
 	}
 }
 
@@ -51,7 +46,9 @@ func writeProjectPaper(w io.Writer, projectPaper api.ProjectPaper) {
 	fmt.Fprintf(w, "\nPaper:\n")
 	fmt.Fprintf(w, "  ID:              %s\n", displayValue(paper.ID))
 	fmt.Fprintf(w, "  Short ID:        %s\n", displayValue(paper.ShortID))
-	fmt.Fprintf(w, "  Source:          %s\n", sourceLabel(paper))
+	if label := paperDetailLabel(paper); label != "" {
+		fmt.Fprintf(w, "  Source:          %s\n", label)
+	}
 	fmt.Fprintf(w, "  Published:       %s\n", formatTime(paper.PublishedDate))
 	fmt.Fprintf(w, "  Authors:         %s\n", displayValue(authorNames(paper.Authors)))
 	fmt.Fprintf(w, "  URL:             %s\n", displayValue(paper.URL))
@@ -86,30 +83,26 @@ func displayValue(value string) string {
 	return value
 }
 
-func formatMetadata(metadata any) string {
-	if metadata == nil {
-		return ""
-	}
-
-	data, err := json.MarshalIndent(metadata, "", "  ")
-	if err != nil || string(data) == "null" || string(data) == "{}" {
-		return ""
-	}
-
-	return string(data)
+func paperListLabel(paper api.Paper) string {
+	return strings.TrimSpace(paper.VenueName)
 }
 
-func sourceLabel(paper api.Paper) string {
-	if paper.Source != nil {
-		name := strings.TrimSpace(paper.Source.Name)
-		if name != "" {
-			return name
+func paperDetailLabel(paper api.Paper) string {
+	if label := strings.TrimSpace(paper.ReferenceLabel); label != "" {
+		return label
+	}
+	return paperListLabel(paper)
+}
+
+func joinDisplayParts(parts ...string) string {
+	display := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "" {
+			continue
 		}
+		display = append(display, part)
 	}
-	if paper.SourceID > 0 {
-		return fmt.Sprintf("source:%d", paper.SourceID)
-	}
-	return "unknown"
+	return strings.Join(display, " · ")
 }
 
 func formatFeedback(feedback *api.Feedback) string {

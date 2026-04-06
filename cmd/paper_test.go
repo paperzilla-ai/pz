@@ -20,7 +20,15 @@ func TestPaperCommandFetchesPublicPaperWithoutLogin(t *testing.T) {
 		if got := r.Header.Get("Authorization"); got != "" {
 			t.Fatalf("Authorization = %q, want empty", got)
 		}
-		_, _ = w.Write([]byte(`{"id":"paper-1","title":"Public Paper","short_id":"abcd1234","source":{"name":"arxiv"}}`))
+		_, _ = w.Write([]byte(`{
+			"id":"paper-1",
+			"title":"Public Paper",
+			"short_id":"abcd1234",
+			"venue_name":"arXiv",
+			"reference_label":"arXiv 2401.12345",
+			"source":{"name":"crossref"},
+			"source_paper_id":"doi:10.1234/example"
+		}`))
 	}))
 	defer server.Close()
 
@@ -34,6 +42,15 @@ func TestPaperCommandFetchesPublicPaperWithoutLogin(t *testing.T) {
 
 	if !strings.Contains(stdout.String(), "Public Paper") {
 		t.Fatalf("stdout = %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Source:          arXiv 2401.12345") {
+		t.Fatalf("stdout = %q", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "crossref") {
+		t.Fatalf("stdout leaked legacy source name: %q", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "Source Paper ID:") {
+		t.Fatalf("stdout leaked source paper id: %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("stderr = %q, want empty", stderr.String())
@@ -84,7 +101,13 @@ func TestPaperCommandProjectModeUsesBridgeRoute(t *testing.T) {
 			"relevance_score":0.91,
 			"relevance_class":2,
 			"feedback":{"vote":"star","downvote_reason":null,"updated_at":"2026-04-02T10:00:00Z"},
-			"paper":{"id":"paper-1","short_id":"abcd1234","title":"Project Paper","source":{"name":"arxiv"}}
+			"paper":{
+				"id":"paper-1",
+				"short_id":"abcd1234",
+				"title":"Project Paper",
+				"reference_label":"DOI 10.1000/project-paper",
+				"source":{"name":"crossref"}
+			}
 		}`))
 	}))
 	defer server.Close()
@@ -102,6 +125,12 @@ func TestPaperCommandProjectModeUsesBridgeRoute(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "Feedback:          star") {
 		t.Fatalf("stdout = %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Source:          DOI 10.1000/project-paper") {
+		t.Fatalf("stdout = %q", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "crossref") {
+		t.Fatalf("stdout leaked legacy source name: %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("stderr = %q, want empty", stderr.String())
@@ -203,6 +232,37 @@ func TestPaperCommandCanonicalMarkdownNotReadyShowsFriendlyMessage(t *testing.T)
 
 	if !strings.Contains(stdout.String(), "Nothing was queued") {
 		t.Fatalf("stdout = %q", stdout.String())
+	}
+}
+
+func TestPaperCommandOmitsLabelWhenOnlyLegacySourceNamespaceExists(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{
+			"id":"paper-1",
+			"title":"Imported Paper",
+			"short_id":"abcd1234",
+			"source":{"name":"provisional_import"},
+			"source_paper_id":"doi:10.9999/imported"
+		}`))
+	}))
+	defer server.Close()
+
+	t.Setenv("PZ_API_URL", server.URL)
+	t.Setenv("PZ_TOKENS_PATH", filepath.Join(t.TempDir(), "missing-tokens.json"))
+
+	cmd, stdout, stderr := newPaperTestCommand(false, false, "")
+	if err := paperCmd.RunE(cmd, []string{"paper-1"}); err != nil {
+		t.Fatalf("RunE: %v", err)
+	}
+
+	if strings.Contains(stdout.String(), "Source:") {
+		t.Fatalf("stdout should omit source label: %q", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "provisional_import") || strings.Contains(stdout.String(), "doi:") {
+		t.Fatalf("stdout leaked legacy source namespace: %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
 	}
 }
 

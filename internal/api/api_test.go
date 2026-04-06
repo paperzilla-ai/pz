@@ -210,6 +210,7 @@ func TestFetchPaper(t *testing.T) {
 
 		json.NewEncoder(w).Encode(map[string]any{
 			"id": "paper-1", "title": "Test Paper", "short_id": "abc12345",
+			"venue_name": "arXiv", "reference_label": "arXiv 2401.12345",
 			"source": map[string]any{"name": "arxiv"},
 		})
 	})
@@ -224,6 +225,12 @@ func TestFetchPaper(t *testing.T) {
 	}
 	if paper.Source == nil || paper.Source.Name != "arxiv" {
 		t.Errorf("Source.Name = %#v, want %q", paper.Source, "arxiv")
+	}
+	if paper.VenueName != "arXiv" {
+		t.Errorf("VenueName = %q, want %q", paper.VenueName, "arXiv")
+	}
+	if paper.ReferenceLabel != "arXiv 2401.12345" {
+		t.Errorf("ReferenceLabel = %q", paper.ReferenceLabel)
 	}
 }
 
@@ -251,6 +258,7 @@ func TestFetchPublicPaper(t *testing.T) {
 
 		json.NewEncoder(w).Encode(map[string]any{
 			"id": "paper-1", "title": "Public Paper", "short_id": "abc12345",
+			"venue_name": "arXiv", "reference_label": "arXiv 2401.12345",
 			"markdown_ready": true,
 		})
 	})
@@ -265,6 +273,12 @@ func TestFetchPublicPaper(t *testing.T) {
 	}
 	if !paper.MarkdownReady {
 		t.Errorf("MarkdownReady = false, want true")
+	}
+	if paper.VenueName != "arXiv" {
+		t.Errorf("VenueName = %q, want %q", paper.VenueName, "arXiv")
+	}
+	if paper.ReferenceLabel != "arXiv 2401.12345" {
+		t.Errorf("ReferenceLabel = %q", paper.ReferenceLabel)
 	}
 }
 
@@ -402,11 +416,13 @@ func TestFetchFeed(t *testing.T) {
 					"id": "fp-1", "paper_title": "Test Paper",
 					"relevance_score": 0.95, "relevance_class": 2,
 					"paper": map[string]any{
-						"id":        "p-1",
-						"title":     "Test Paper",
-						"authors":   []map[string]string{{"name": "Smith"}},
-						"source_id": 1,
-						"source":    map[string]any{"name": "arxiv"},
+						"id":              "p-1",
+						"title":           "Test Paper",
+						"authors":         []map[string]string{{"name": "Smith"}},
+						"venue_name":      "arXiv",
+						"reference_label": "arXiv 2401.12345",
+						"source_id":       1,
+						"source":          map[string]any{"name": "arxiv"},
 					},
 					"feedback": map[string]any{"vote": "star"},
 				},
@@ -431,6 +447,12 @@ func TestFetchFeed(t *testing.T) {
 	}
 	if feed.Items[0].Paper.Source == nil || feed.Items[0].Paper.Source.Name != "arxiv" {
 		t.Errorf("Source.Name = %#v, want %q", feed.Items[0].Paper.Source, "arxiv")
+	}
+	if feed.Items[0].Paper.VenueName != "arXiv" {
+		t.Errorf("VenueName = %q, want %q", feed.Items[0].Paper.VenueName, "arXiv")
+	}
+	if feed.Items[0].Paper.ReferenceLabel != "arXiv 2401.12345" {
+		t.Errorf("ReferenceLabel = %q", feed.Items[0].Paper.ReferenceLabel)
 	}
 	if feed.Items[0].Feedback == nil || feed.Items[0].Feedback.Vote != "star" {
 		t.Errorf("Feedback = %#v, want star", feed.Items[0].Feedback)
