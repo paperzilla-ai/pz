@@ -13,7 +13,10 @@ func TestBuildUpdateNoticeForOutdatedVersion(t *testing.T) {
 	if notice == "" {
 		t.Fatal("expected notice, got empty string")
 	}
-	if !strings.Contains(notice, "pz v0.2.0 is out of date") {
+	if !strings.Contains(notice, "pz 0.2.0 is out of date") {
+		t.Fatalf("notice = %q", notice)
+	}
+	if !strings.Contains(notice, "Latest release: 0.3.0.") {
 		t.Fatalf("notice = %q", notice)
 	}
 	if !strings.Contains(notice, "Run `pz update` to upgrade and get the latest fixes.") {
@@ -37,6 +40,9 @@ func TestBuildUpdateNoticeForSourceBuild(t *testing.T) {
 		t.Fatal("expected notice, got empty string")
 	}
 	if !strings.Contains(notice, "this is a source build, not an official tagged release") {
+		t.Fatalf("notice = %q", notice)
+	}
+	if !strings.Contains(notice, "Latest release: 0.3.0.") {
 		t.Fatalf("notice = %q", notice)
 	}
 	if !strings.Contains(notice, "Run `pz update` for upgrade instructions.") {

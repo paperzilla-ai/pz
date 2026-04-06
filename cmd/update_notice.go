@@ -61,7 +61,7 @@ func buildUpdateNotice(current string, release update.Release, useColor bool) st
 		if useColor {
 			label = ansiBold + ansiYellow + label + ansiReset
 		}
-		return fmt.Sprintf("%s this is a source build, not an official tagged release. Latest release: %s. Run `pz update` for upgrade instructions.", label, release.TagName)
+		return fmt.Sprintf("%s this is a source build, not an official tagged release. Latest release: %s. Run `pz update` for upgrade instructions.", label, displayVersion(release.TagName))
 	}
 
 	cmp, err := update.CompareVersions(current, release.TagName)
@@ -74,7 +74,7 @@ func buildUpdateNotice(current string, release update.Release, useColor bool) st
 		label = ansiBold + ansiYellow + label + ansiReset
 	}
 
-	return fmt.Sprintf("%s pz %s is out of date. Latest release: %s. Run `pz update` to upgrade and get the latest fixes.", label, current, release.TagName)
+	return fmt.Sprintf("%s pz %s is out of date. Latest release: %s. Run `pz update` to upgrade and get the latest fixes.", label, displayVersion(current), displayVersion(release.TagName))
 }
 
 func supportsColor(file *os.File) bool {

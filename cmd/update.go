@@ -56,7 +56,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	guidance := update.GuidanceFor(method, runtime.GOOS, runtime.GOARCH, binaryPath)
 
 	fmt.Fprintf(out, "Current version:  %s\n", displayVersion(Version))
-	fmt.Fprintf(out, "Latest release:   %s\n", release.TagName)
+	fmt.Fprintf(out, "Latest release:   %s\n", displayVersion(release.TagName))
 	fmt.Fprintf(out, "Install method:   %s\n\n", method.DisplayName())
 
 	fmt.Fprintln(out, releaseStatus(Version, release.TagName))
@@ -99,10 +99,14 @@ func currentBinaryPath(execPath, resolvedPath string) string {
 }
 
 func displayVersion(version string) string {
-	if strings.TrimSpace(version) == "" {
+	trimmed := strings.TrimSpace(version)
+	if trimmed == "" {
 		return "dev"
 	}
-	return version
+	if strings.EqualFold(trimmed, "dev") {
+		return "dev"
+	}
+	return strings.TrimPrefix(trimmed, "v")
 }
 
 func releaseStatus(current, latest string) string {

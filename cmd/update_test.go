@@ -45,8 +45,8 @@ func TestUpdateCommandShowsHomebrewUpgradeInstructions(t *testing.T) {
 	}
 
 	output := out.String()
-	assertContains(t, output, "Current version:  v0.2.0")
-	assertContains(t, output, "Latest release:   v0.3.0")
+	assertContains(t, output, "Current version:  0.2.0")
+	assertContains(t, output, "Latest release:   0.3.0")
 	assertContains(t, output, "Install method:   Homebrew")
 	assertContains(t, output, "A newer release is available.")
 	assertContains(t, output, "brew update")
