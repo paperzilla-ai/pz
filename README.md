@@ -176,6 +176,20 @@ pz feed <project-id> --since 2025-08-01
 pz feed <project-id> --json
 ```
 
+Search the full feed:
+
+```bash
+pz feed search --project-id <project-id> --query "latent retrieval"
+pz feed search --project-id <project-id> --query "Proxi" --feedback-filter starred
+pz feed search --project-id <project-id> --query "latent retrieval" --must-read --limit 10 --offset 20
+pz feed search --project-id <project-id> --query "latent retrieval" --json
+```
+
+Text output includes the echoed query, returned item count, and whether more ranked results are available via `has_more`.
+Search uses server-side ranking across the full feed, not just already loaded browse pages.
+Supported `--feedback-filter` values are `all`, `unrated`, `liked`, `disliked`, `starred`, `not-relevant`, and `low-quality`.
+Queries are trimmed and must be 3-200 characters.
+
 ### Subscribe in a feed reader
 
 Get an Atom feed URL you can add to any feed reader ([Vienna RSS](https://github.com/ViennaRSS/vienna-rss), NetNewsWire, Feedly, etc.):

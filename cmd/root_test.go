@@ -37,4 +37,7 @@ func TestRootHelpLinksToGettingStartedDocs(t *testing.T) {
 	if !strings.Contains(output, "pz feedback <project-paper-id> upvote") {
 		t.Fatalf("help output missing feedback example: %s", output)
 	}
+	if !strings.Contains(output, `pz feed search --project-id <id> --query "latent retrieval"`) {
+		t.Fatalf("help output missing feed search example: %s", output)
+	}
 }

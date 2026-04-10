@@ -15,6 +15,7 @@ func init() {
 	feedCmd.Flags().StringP("since", "s", "", "Only papers ready after this date")
 	feedCmd.Flags().IntP("limit", "n", 0, "Limit number of results")
 	feedCmd.Flags().Bool("atom", false, "Print Atom feed URL for use in feed readers")
+	feedCmd.AddCommand(feedSearchCmd)
 }
 
 var feedCmd = &cobra.Command{
@@ -78,34 +79,7 @@ var feedCmd = &cobra.Command{
 
 		fmt.Fprintf(out, "%s — %d papers (total: %d)\n\n", project.Name, len(feed.Items), feed.Total)
 
-		for _, p := range feed.Items {
-			prefix := "○ Related"
-			if p.RelevanceClass == 2 {
-				prefix = "★ Must Read"
-			}
-			if marker := feedbackMarker(p.Feedback); marker != "" {
-				prefix += " " + marker
-			}
-
-			title := p.PaperTitle
-			if len(title) > 80 {
-				title = title[:77] + "..."
-			}
-
-			fmt.Fprintf(out, "%s  %s\n", prefix, title)
-
-			surname := firstAuthorSurname(p.Paper.Authors)
-			date := formatTime(p.Paper.PublishedDate)
-			score := int(p.RelevanceScore * 100)
-			meta := joinDisplayParts(
-				surname,
-				paperListLabel(p.Paper),
-				date,
-				fmt.Sprintf("relevance: %d%%", score),
-			)
-
-			fmt.Fprintf(out, "  %s\n\n", meta)
-		}
+		writeProjectPaperFeedList(out, feed.Items)
 
 		return nil
 	},
