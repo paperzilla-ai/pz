@@ -9,8 +9,14 @@ import (
 )
 
 func init() {
+	feedbackCmd.PersistentFlags().BoolP("json", "j", false, "Output as JSON")
 	feedbackCmd.Flags().String("reason", "", "Optional downvote reason (not_relevant or low_quality)")
 	feedbackCmd.AddCommand(feedbackClearCmd)
+}
+
+type feedbackClearResponse struct {
+	ProjectPaperRef string `json:"project_paper_ref"`
+	Cleared         bool   `json:"cleared"`
 }
 
 var feedbackCmd = &cobra.Command{
@@ -36,6 +42,7 @@ var feedbackCmd = &cobra.Command{
 		if reason != "" && vote != "downvote" {
 			return fmt.Errorf("--reason is only allowed with downvote")
 		}
+		jsonOut, _ := cmd.Flags().GetBool("json")
 
 		tokens, err := loadRequiredAuth()
 		if err != nil {
@@ -47,6 +54,10 @@ var feedbackCmd = &cobra.Command{
 		})
 		if err != nil {
 			return fmt.Errorf("failed to set feedback: %w", err)
+		}
+
+		if jsonOut {
+			return writeJSON(cmd.OutOrStdout(), feedback)
 		}
 
 		message := fmt.Sprintf("Feedback set: %s", feedback.Vote)
@@ -63,6 +74,7 @@ var feedbackClearCmd = &cobra.Command{
 	Short: "Clear recommendation feedback for one project paper",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		jsonOut, _ := cmd.Flags().GetBool("json")
 		tokens, err := loadRequiredAuth()
 		if err != nil {
 			return err
@@ -72,6 +84,13 @@ var feedbackClearCmd = &cobra.Command{
 			return struct{}{}, api.ClearProjectPaperFeedback(at, args[0])
 		}); err != nil {
 			return fmt.Errorf("failed to clear feedback: %w", err)
+		}
+
+		if jsonOut {
+			return writeJSON(cmd.OutOrStdout(), feedbackClearResponse{
+				ProjectPaperRef: args[0],
+				Cleared:         true,
+			})
 		}
 
 		fmt.Fprintln(cmd.OutOrStdout(), "Feedback cleared.")

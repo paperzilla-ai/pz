@@ -9,7 +9,15 @@ import (
 )
 
 func init() {
+	projectCmd.PersistentFlags().BoolP("json", "j", false, "Output as JSON")
 	projectCmd.AddCommand(projectListCmd)
+}
+
+type projectListItem struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Mode       string `json:"mode"`
+	Visibility string `json:"visibility"`
 }
 
 var projectCmd = &cobra.Command{
@@ -21,6 +29,7 @@ var projectCmd = &cobra.Command{
 			return cmd.Help()
 		}
 
+		jsonOut, _ := cmd.Flags().GetBool("json")
 		tokens, err := loadAuth()
 		if err != nil {
 			return err
@@ -33,21 +42,26 @@ var projectCmd = &cobra.Command{
 			return fmt.Errorf("failed to fetch project: %w", err)
 		}
 
-		fmt.Printf("Name:             %s\n", p.Name)
-		fmt.Printf("ID:               %s\n", p.ID)
-		fmt.Printf("Mode:             %s\n", p.Mode)
-		fmt.Printf("Visibility:       %s\n", p.Visibility)
-		fmt.Printf("Matching State:   %s\n", p.MatchingState)
-		fmt.Printf("Email Frequency:  %s\n", p.EmailFrequency)
-		fmt.Printf("Email Time:       %s\n", p.EmailTime)
-		fmt.Printf("Max Candidates:   %d\n", p.MaxCandidates)
-		fmt.Printf("Max Papers/Digest:%d\n", p.MaxPapersPerDigests)
-		fmt.Printf("Created:          %s\n", formatTime(p.CreatedAt))
-		fmt.Printf("Activated:        %s\n", formatTime(p.ActivatedAt))
-		fmt.Printf("Last Digest:      %s\n", formatTime(p.LastDigestSentAt))
+		out := cmd.OutOrStdout()
+		if jsonOut {
+			return writeJSON(out, p)
+		}
+
+		fmt.Fprintf(out, "Name:             %s\n", p.Name)
+		fmt.Fprintf(out, "ID:               %s\n", p.ID)
+		fmt.Fprintf(out, "Mode:             %s\n", p.Mode)
+		fmt.Fprintf(out, "Visibility:       %s\n", p.Visibility)
+		fmt.Fprintf(out, "Matching State:   %s\n", p.MatchingState)
+		fmt.Fprintf(out, "Email Frequency:  %s\n", p.EmailFrequency)
+		fmt.Fprintf(out, "Email Time:       %s\n", p.EmailTime)
+		fmt.Fprintf(out, "Max Candidates:   %d\n", p.MaxCandidates)
+		fmt.Fprintf(out, "Max Papers/Digest:%d\n", p.MaxPapersPerDigests)
+		fmt.Fprintf(out, "Created:          %s\n", formatTime(p.CreatedAt))
+		fmt.Fprintf(out, "Activated:        %s\n", formatTime(p.ActivatedAt))
+		fmt.Fprintf(out, "Last Digest:      %s\n", formatTime(p.LastDigestSentAt))
 
 		if p.InterestDescription != "" {
-			fmt.Printf("\nInterest:\n  %s\n", p.InterestDescription)
+			fmt.Fprintf(out, "\nInterest:\n  %s\n", p.InterestDescription)
 		}
 
 		return nil
@@ -58,6 +72,7 @@ var projectListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List your projects",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		jsonOut, _ := cmd.Flags().GetBool("json")
 		tokens, err := loadAuth()
 		if err != nil {
 			return err
@@ -70,22 +85,40 @@ var projectListCmd = &cobra.Command{
 			return fmt.Errorf("failed to fetch projects: %w", err)
 		}
 
+		out := cmd.OutOrStdout()
+		if jsonOut {
+			return writeJSON(out, summarizeProjects(projects))
+		}
+
 		if len(projects) == 0 {
-			fmt.Printf("No projects found. Create your first project: %s\n", cliGettingStartedURL)
+			fmt.Fprintf(out, "No projects found. Create your first project: %s\n", cliGettingStartedURL)
 			return nil
 		}
 
-		fmt.Printf("%-36s  %-25s  %-10s  %-10s  %s\n", "ID", "NAME", "MODE", "VISIBILITY", "CREATED")
+		fmt.Fprintf(out, "%-36s  %-25s  %-10s  %-10s  %s\n", "ID", "NAME", "MODE", "VISIBILITY", "CREATED")
 		for _, p := range projects {
 			name := p.Name
 			if len(name) > 25 {
 				name = name[:22] + "..."
 			}
-			fmt.Printf("%-36s  %-25s  %-10s  %-10s  %s\n", p.ID, name, p.Mode, p.Visibility, formatTime(p.CreatedAt))
+			fmt.Fprintf(out, "%-36s  %-25s  %-10s  %-10s  %s\n", p.ID, name, p.Mode, p.Visibility, formatTime(p.CreatedAt))
 		}
 
 		return nil
 	},
+}
+
+func summarizeProjects(projects []api.Project) []projectListItem {
+	items := make([]projectListItem, 0, len(projects))
+	for _, project := range projects {
+		items = append(items, projectListItem{
+			ID:         project.ID,
+			Name:       project.Name,
+			Mode:       project.Mode,
+			Visibility: project.Visibility,
+		})
+	}
+	return items
 }
 
 func formatTime(s string) string {

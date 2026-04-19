@@ -23,11 +23,14 @@ var rootCmd = &cobra.Command{
 	Example: `  pz login
   pz update
   pz project list
+  pz project list --json
   pz project <id>
+  pz project <id> --json
   pz paper <paper-id>
   pz paper <paper-id> --project <project-id>
   pz rec <project-paper-id>
   pz feedback <project-paper-id> upvote
+  pz feedback <project-paper-id> upvote --json
   pz feed <id>
   pz feed <id> --must-read --limit 5
   pz feed search --project-id <id> --query "latent retrieval"

@@ -111,7 +111,19 @@ List your projects:
 
 ```bash
 pz project list
+pz project list --json
 ```
+
+`pz project list --json` returns a compact summary array with the same fields shown in the table output: `id`, `name`, `mode`, and `visibility`.
+
+Show a single project:
+
+```bash
+pz project <project-id>
+pz project <project-id> --json
+```
+
+`pz project <project-id> --json` returns the full project record.
 
 Read a canonical paper by Paperzilla paper ID:
 
@@ -139,17 +151,24 @@ Leave recommendation feedback:
 
 ```bash
 pz feedback <project-paper-id> upvote
+pz feedback <project-paper-id> upvote --json
 pz feedback <project-paper-id> star
 pz feedback <project-paper-id> downvote --reason not_relevant
 pz feedback clear <project-paper-id>
+pz feedback clear <project-paper-id> --json
 ```
+
+`clear` is a subcommand, so the valid syntax is `pz feedback clear <project-paper-id>`, not `pz feedback <project-paper-id> clear`.
+`pz feedback --json` returns the feedback object. `pz feedback clear --json` returns a small confirmation envelope because the backend clear endpoint returns `204 No Content`.
 
 Canonical `pz paper --markdown` only returns markdown when it is already prepared. `pz rec --markdown` can queue markdown generation and prints a friendly message if it is still being prepared.
 
-Browse your feed:
+Get a project ID, then browse or search its feed:
 
 ```bash
+pz project list
 pz feed <project-id>
+pz feed search --project-id <project-id> --query "latent retrieval"
 ```
 
 ```
@@ -185,6 +204,7 @@ pz feed search --project-id <project-id> --query "latent retrieval" --must-read 
 pz feed search --project-id <project-id> --query "latent retrieval" --json
 ```
 
+Use `pz project list` first if you need to look up the project ID.
 Text output includes the echoed query, returned item count, and whether more ranked results are available via `has_more`.
 Search uses server-side ranking across the full feed, not just already loaded browse pages.
 Supported `--feedback-filter` values are `all`, `unrated`, `liked`, `disliked`, `starred`, `not-relevant`, and `low-quality`.
