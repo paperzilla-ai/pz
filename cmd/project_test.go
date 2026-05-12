@@ -91,7 +91,17 @@ func TestProjectCommandJSON(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer access-1" {
 			t.Fatalf("Authorization = %q, want %q", r.Header.Get("Authorization"), "Bearer access-1")
 		}
-		_, _ = w.Write([]byte(`{"id":"proj-1","name":"Ranking Papers","mode":"auto","visibility":"private","created_at":"2025-01-01T00:00:00Z"}`))
+		_, _ = w.Write([]byte(`{
+			"id":"proj-1",
+			"name":"Ranking Papers",
+			"mode":"auto",
+			"visibility":"private",
+			"created_at":"2025-01-01T00:00:00Z",
+			"positive_keywords":["retrieval"],
+			"negative_keywords":["survey"],
+			"sources":[{"id":1,"name":"arXiv","base_url":"https://arxiv.org"}],
+			"categories":[{"id":10,"code":"cs.CL","name":"Computation and Language","source_id":1,"source_name":"arXiv","weight":1.0}]
+		}`))
 	}))
 	defer server.Close()
 
@@ -112,6 +122,18 @@ func TestProjectCommandJSON(t *testing.T) {
 	}
 	if project.Name != "Ranking Papers" {
 		t.Fatalf("project.Name = %q, want %q", project.Name, "Ranking Papers")
+	}
+	if len(project.PositiveKeywords) != 1 || project.PositiveKeywords[0] != "retrieval" {
+		t.Fatalf("project.PositiveKeywords = %#v, want [retrieval]", project.PositiveKeywords)
+	}
+	if len(project.NegativeKeywords) != 1 || project.NegativeKeywords[0] != "survey" {
+		t.Fatalf("project.NegativeKeywords = %#v, want [survey]", project.NegativeKeywords)
+	}
+	if len(project.Sources) != 1 || project.Sources[0].Name != "arXiv" {
+		t.Fatalf("project.Sources = %#v, want arXiv source", project.Sources)
+	}
+	if len(project.Categories) != 1 || project.Categories[0].Code != "cs.CL" {
+		t.Fatalf("project.Categories = %#v, want cs.CL category", project.Categories)
 	}
 }
 

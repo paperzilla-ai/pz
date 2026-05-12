@@ -123,7 +123,7 @@ pz project <project-id>
 pz project <project-id> --json
 ```
 
-`pz project <project-id> --json` returns the full project record.
+`pz project <project-id> --json` returns the full project record, including `positive_keywords`, `negative_keywords`, watched `sources`, and watched `categories`.
 
 Read a canonical paper by Paperzilla paper ID:
 

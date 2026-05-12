@@ -173,6 +173,17 @@ func TestFetchProject(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"id": "proj-1", "name": "Test Project", "mode": "auto",
 			"visibility": "private", "created_at": "2025-01-01T00:00:00Z",
+			"positive_keywords": []string{"retrieval"},
+			"negative_keywords": []string{"survey"},
+			"sources": []map[string]any{
+				{"id": 1, "name": "arXiv", "base_url": "https://arxiv.org"},
+			},
+			"categories": []map[string]any{
+				{
+					"id": 10, "code": "cs.CL", "name": "Computation and Language",
+					"source_id": 1, "source_name": "arXiv", "weight": 1.0,
+				},
+			},
 		})
 	})
 	defer server.Close()
@@ -183,6 +194,36 @@ func TestFetchProject(t *testing.T) {
 	}
 	if project.ID != "proj-1" {
 		t.Errorf("ID = %q", project.ID)
+	}
+	if len(project.PositiveKeywords) != 1 || project.PositiveKeywords[0] != "retrieval" {
+		t.Errorf("PositiveKeywords = %#v", project.PositiveKeywords)
+	}
+	if len(project.NegativeKeywords) != 1 || project.NegativeKeywords[0] != "survey" {
+		t.Errorf("NegativeKeywords = %#v", project.NegativeKeywords)
+	}
+	if len(project.Sources) != 1 || project.Sources[0].Name != "arXiv" {
+		t.Errorf("Sources = %#v", project.Sources)
+	}
+	if len(project.Categories) != 1 || project.Categories[0].Code != "cs.CL" {
+		t.Errorf("Categories = %#v", project.Categories)
+	}
+}
+
+func TestFetchProjectNormalizesMissingMetadata(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{
+			"id": "proj-1", "name": "Test Project", "mode": "auto",
+			"visibility": "private", "created_at": "2025-01-01T00:00:00Z",
+		})
+	})
+	defer server.Close()
+
+	project, err := FetchProject("my_token", "proj-1")
+	if err != nil {
+		t.Fatalf("FetchProject: %v", err)
+	}
+	if project.PositiveKeywords == nil || project.NegativeKeywords == nil || project.Sources == nil || project.Categories == nil {
+		t.Fatalf("metadata arrays were not normalized: %#v", project)
 	}
 }
 
