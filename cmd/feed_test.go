@@ -40,6 +40,7 @@ func TestFeedCommandShowsInlineFeedbackMarkers(t *testing.T) {
 	cmd.Flags().Bool("must-read", false, "")
 	cmd.Flags().String("since", "", "")
 	cmd.Flags().Int("limit", 0, "")
+	cmd.Flags().Int("offset", 0, "")
 	cmd.Flags().Bool("atom", false, "")
 
 	var stdout bytes.Buffer
@@ -67,5 +68,65 @@ func TestFeedCommandShowsInlineFeedbackMarkers(t *testing.T) {
 	}
 	if strings.Contains(output, "doi:") || strings.Contains(output, "url:") || strings.Contains(output, "pdf:") {
 		t.Fatalf("output leaked source namespace prefix: %q", output)
+	}
+}
+
+func TestFeedCommandOffsetPassThrough(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/projects/proj-1/feed" {
+			t.Fatalf("unexpected path %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("limit"); got != "5" {
+			t.Fatalf("limit = %q, want 5", got)
+		}
+		if got := r.URL.Query().Get("offset"); got != "20" {
+			t.Fatalf("offset = %q, want 20", got)
+		}
+		_, _ = w.Write([]byte(`{"items":[],"total":0,"limit":5,"offset":20}`))
+	}))
+	defer server.Close()
+
+	t.Setenv("PZ_API_URL", server.URL)
+	writeTestTokens(t)
+
+	cmd := &cobra.Command{}
+	cmd.Flags().Bool("json", true, "")
+	cmd.Flags().Bool("must-read", false, "")
+	cmd.Flags().String("since", "", "")
+	cmd.Flags().Int("limit", 0, "")
+	cmd.Flags().Int("offset", 0, "")
+	cmd.Flags().Bool("atom", false, "")
+	_ = cmd.Flags().Set("limit", "5")
+	_ = cmd.Flags().Set("offset", "20")
+
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+
+	if err := feedCmd.RunE(cmd, []string{"proj-1"}); err != nil {
+		t.Fatalf("RunE: %v", err)
+	}
+	if !strings.Contains(stdout.String(), `"offset": 20`) {
+		t.Fatalf("stdout = %q", stdout.String())
+	}
+}
+
+func TestFeedCommandRejectsNegativeOffset(t *testing.T) {
+	writeTestTokens(t)
+
+	cmd := &cobra.Command{}
+	cmd.Flags().Bool("json", false, "")
+	cmd.Flags().Bool("must-read", false, "")
+	cmd.Flags().String("since", "", "")
+	cmd.Flags().Int("limit", 0, "")
+	cmd.Flags().Int("offset", 0, "")
+	cmd.Flags().Bool("atom", false, "")
+	_ = cmd.Flags().Set("offset", "-1")
+
+	err := feedCmd.RunE(cmd, []string{"proj-1"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "invalid feed request: offset must be at least 0") {
+		t.Fatalf("err = %v", err)
 	}
 }

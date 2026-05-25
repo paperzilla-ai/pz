@@ -190,7 +190,7 @@ Recommendations can show existing feedback inline:
 Filter and export:
 
 ```bash
-pz feed <project-id> --must-read --limit 5
+pz feed <project-id> --must-read --limit 5 --offset 20
 pz feed <project-id> --since 2025-08-01
 pz feed <project-id> --json
 ```

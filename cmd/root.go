@@ -32,7 +32,7 @@ var rootCmd = &cobra.Command{
   pz feedback <project-paper-id> upvote
   pz feedback <project-paper-id> upvote --json
   pz feed <id>
-  pz feed <id> --must-read --limit 5
+  pz feed <id> --must-read --limit 5 --offset 20
   pz feed search --project-id <id> --query "latent retrieval"
   pz feed <id> --json
   pz feed <id> --atom`,
