@@ -6,11 +6,28 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/paperzilla/pz/internal/config"
 )
 
 var ErrUnauthorized = errors.New("unauthorized")
+
+const supportedClientHeader = "cli"
+
+var clientVersion = "dev"
+
+func SetClientVersion(version string) {
+	trimmed := strings.TrimSpace(version)
+	if trimmed == "" {
+		trimmed = "dev"
+	}
+	clientVersion = trimmed
+}
+
+func supportedUserAgent() string {
+	return "paperzilla-pz/" + clientVersion
+}
 
 func doRequest(method, path string, body any, accessToken string) ([]byte, error) {
 	respBody, _, err := doRequestDetailed(method, path, body, accessToken)
@@ -35,6 +52,8 @@ func doRequestDetailed(method, path string, body any, accessToken string) ([]byt
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", supportedUserAgent())
+	req.Header.Set("X-Paperzilla-Client", supportedClientHeader)
 	if accessToken != "" {
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/paperzilla/pz/internal/api"
 	"github.com/spf13/cobra"
 )
 
@@ -39,6 +40,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	api.SetClientVersion(Version)
 	cobra.EnableCommandSorting = false
 	rootCmd.AddCommand(loginCmd, updateCmd, projectCmd, paperCmd, recCmd, feedbackCmd, feedCmd)
 }

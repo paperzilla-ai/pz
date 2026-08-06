@@ -9,6 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	fetchPublicPaperFunc         = api.FetchPublicPaper
+	fetchPublicPaperMarkdownFunc = api.FetchPublicPaperMarkdown
+)
+
 func init() {
 	paperCmd.Flags().BoolP("json", "j", false, "Output as JSON")
 	paperCmd.Flags().Bool("markdown", false, "Print raw markdown")
@@ -39,10 +44,14 @@ var paperCmd = &cobra.Command{
 }
 
 func runCanonicalPaper(cmd *cobra.Command, paperRef string, jsonOut bool) error {
+	if _, err := loadRequiredAuth(); err != nil {
+		return err
+	}
+
 	out := cmd.OutOrStdout()
 	errOut := cmd.ErrOrStderr()
 
-	paper, err := api.FetchPublicPaper(paperRef)
+	paper, err := fetchPublicPaperFunc(paperRef)
 	if err != nil {
 		var apiErr *api.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
@@ -66,10 +75,14 @@ func runCanonicalPaper(cmd *cobra.Command, paperRef string, jsonOut bool) error 
 }
 
 func runCanonicalPaperMarkdown(cmd *cobra.Command, paperRef string) error {
+	if _, err := loadRequiredAuth(); err != nil {
+		return err
+	}
+
 	out := cmd.OutOrStdout()
 	errOut := cmd.ErrOrStderr()
 
-	markdown, err := api.FetchPublicPaperMarkdown(paperRef)
+	markdown, err := fetchPublicPaperMarkdownFunc(paperRef)
 	if err != nil {
 		var pending *api.PaperMarkdownPendingError
 		if errors.As(err, &pending) {

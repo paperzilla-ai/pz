@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -27,6 +28,12 @@ func TestSendOTP(t *testing.T) {
 		}
 		if r.URL.Path != "/api/auth/otp" {
 			t.Errorf("path = %s, want /api/auth/otp", r.URL.Path)
+		}
+		if r.Header.Get("X-Paperzilla-Client") != "cli" {
+			t.Errorf("X-Paperzilla-Client = %q", r.Header.Get("X-Paperzilla-Client"))
+		}
+		if r.Header.Get("User-Agent") != "paperzilla-pz/dev" {
+			t.Errorf("User-Agent = %q", r.Header.Get("User-Agent"))
 		}
 
 		body, _ := io.ReadAll(r.Body)
@@ -98,6 +105,9 @@ func TestRefreshAccessToken(t *testing.T) {
 		body, _ := io.ReadAll(r.Body)
 		var req map[string]string
 		json.Unmarshal(body, &req)
+		if req["access_token"] != "old_access" {
+			t.Errorf("access_token = %q", req["access_token"])
+		}
 		if req["refresh_token"] != "old_token" {
 			t.Errorf("refresh_token = %q", req["refresh_token"])
 		}
@@ -110,7 +120,7 @@ func TestRefreshAccessToken(t *testing.T) {
 	})
 	defer server.Close()
 
-	tokens, err := RefreshAccessToken("old_token")
+	tokens, err := RefreshAccessToken("old_access", "old_token")
 	if err != nil {
 		t.Fatalf("RefreshAccessToken: %v", err)
 	}
@@ -129,9 +139,52 @@ func TestRefreshAccessTokenError(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := RefreshAccessToken("bad_token")
+	_, err := RefreshAccessToken("old_access", "bad_token")
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCheckCLIAccess(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/auth/cli-access" {
+			t.Errorf("path = %s, want /api/auth/cli-access", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer access-token" {
+			t.Errorf("Authorization = %q", r.Header.Get("Authorization"))
+		}
+		json.NewEncoder(w).Encode(map[string]any{"allowed": true})
+	})
+	defer server.Close()
+
+	if err := CheckCLIAccess("access-token"); err != nil {
+		t.Fatalf("CheckCLIAccess: %v", err)
+	}
+}
+
+func TestNestedCLIAccessErrorCodeIsParsed(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(`{"detail":{"code":"CLI_UPGRADE_REQUIRED","message":"Upgrade to continue.","upgrade_destination":"early_user_offer","upgrade_path":"/early-user-offer"}}`))
+	})
+	defer server.Close()
+
+	err := CheckCLIAccess("access-token")
+	if !IsCLIAccessError(err) {
+		t.Fatalf("err = %v, want CLI access error", err)
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("err = %v, want APIError", err)
+	}
+	if apiErr.Code != CLIUpgradeRequiredCode || apiErr.Detail != "Upgrade to continue." {
+		t.Fatalf("APIError = %#v", apiErr)
+	}
+	if apiErr.UpgradeDestination != "early_user_offer" || apiErr.UpgradePath != "/early-user-offer" {
+		t.Fatalf("APIError upgrade destination = %#v", apiErr)
+	}
+	if !strings.Contains(apiErr.Error(), "upgrade: /early-user-offer") {
+		t.Fatalf("error does not report upgrade path: %q", apiErr.Error())
 	}
 }
 

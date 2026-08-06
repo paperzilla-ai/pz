@@ -8,11 +8,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/paperzilla/pz/internal/api"
 	"github.com/paperzilla/pz/internal/config"
 	"github.com/spf13/cobra"
 )
 
-func TestPaperCommandFetchesPublicPaperWithoutLogin(t *testing.T) {
+func TestPaperCommandFetchesPublicPaperAfterAuthPreflight(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/public/papers/paper-1" {
 			t.Fatalf("path = %s, want /api/public/papers/paper-1", r.URL.Path)
@@ -33,7 +34,7 @@ func TestPaperCommandFetchesPublicPaperWithoutLogin(t *testing.T) {
 	defer server.Close()
 
 	t.Setenv("PZ_API_URL", server.URL)
-	t.Setenv("PZ_TOKENS_PATH", filepath.Join(t.TempDir(), "missing-tokens.json"))
+	writeTestTokens(t)
 
 	cmd, stdout, stderr := newPaperTestCommand(false, false, "")
 	if err := paperCmd.RunE(cmd, []string{"paper-1"}); err != nil {
@@ -57,7 +58,7 @@ func TestPaperCommandFetchesPublicPaperWithoutLogin(t *testing.T) {
 	}
 }
 
-func TestPaperCommandMarkdownUsesPublicEndpoint(t *testing.T) {
+func TestPaperCommandMarkdownUsesPublicEndpointAfterAuthPreflight(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/public/papers/paper-1/markdown" {
 			t.Fatalf("path = %s, want /api/public/papers/paper-1/markdown", r.URL.Path)
@@ -70,7 +71,7 @@ func TestPaperCommandMarkdownUsesPublicEndpoint(t *testing.T) {
 	defer server.Close()
 
 	t.Setenv("PZ_API_URL", server.URL)
-	t.Setenv("PZ_TOKENS_PATH", filepath.Join(t.TempDir(), "missing-tokens.json"))
+	writeTestTokens(t)
 
 	cmd, stdout, stderr := newPaperTestCommand(false, true, "")
 	if err := paperCmd.RunE(cmd, []string{"paper-1"}); err != nil {
@@ -82,6 +83,61 @@ func TestPaperCommandMarkdownUsesPublicEndpoint(t *testing.T) {
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestPaperCommandPreflightDenialPreventsPublicFunctionalCall(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		markdown bool
+	}{
+		{name: "paper", markdown: false},
+		{name: "markdown", markdown: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var preflightCalls int
+			var functionalCalls int
+			savePaperTestTokens(t)
+			originalCheckCLIAccess := checkCLIAccessFunc
+			originalFetchPublicPaper := fetchPublicPaperFunc
+			originalFetchPublicMarkdown := fetchPublicPaperMarkdownFunc
+			checkCLIAccessFunc = func(string) error {
+				preflightCalls++
+				return &api.APIError{
+					StatusCode:         http.StatusForbidden,
+					Code:               api.CLIUpgradeRequiredCode,
+					Detail:             "Upgrade to continue.",
+					UpgradeDestination: "early_user_offer",
+					UpgradePath:        "/early-user-offer",
+				}
+			}
+			fetchPublicPaperFunc = func(string) (api.Paper, error) {
+				functionalCalls++
+				return api.Paper{}, nil
+			}
+			fetchPublicPaperMarkdownFunc = func(string) (string, error) {
+				functionalCalls++
+				return "", nil
+			}
+			t.Cleanup(func() {
+				checkCLIAccessFunc = originalCheckCLIAccess
+				fetchPublicPaperFunc = originalFetchPublicPaper
+				fetchPublicPaperMarkdownFunc = originalFetchPublicMarkdown
+			})
+
+			cmd, _, _ := newPaperTestCommand(false, test.markdown, "")
+			err := paperCmd.RunE(cmd, []string{"paper-1"})
+
+			if !api.IsCLIAccessError(err) {
+				t.Fatalf("err = %v, want CLI access denial", err)
+			}
+			if preflightCalls != 1 {
+				t.Fatalf("preflight calls = %d, want 1", preflightCalls)
+			}
+			if functionalCalls != 0 {
+				t.Fatalf("functional calls = %d, want 0", functionalCalls)
+			}
+		})
 	}
 }
 
@@ -223,7 +279,7 @@ func TestPaperCommandCanonicalMarkdownNotReadyShowsFriendlyMessage(t *testing.T)
 	defer server.Close()
 
 	t.Setenv("PZ_API_URL", server.URL)
-	t.Setenv("PZ_TOKENS_PATH", filepath.Join(t.TempDir(), "missing-tokens.json"))
+	writeTestTokens(t)
 
 	cmd, stdout, _ := newPaperTestCommand(false, true, "")
 	if err := paperCmd.RunE(cmd, []string{"paper-1"}); err != nil {
@@ -248,7 +304,7 @@ func TestPaperCommandOmitsLabelWhenOnlyLegacySourceNamespaceExists(t *testing.T)
 	defer server.Close()
 
 	t.Setenv("PZ_API_URL", server.URL)
-	t.Setenv("PZ_TOKENS_PATH", filepath.Join(t.TempDir(), "missing-tokens.json"))
+	writeTestTokens(t)
 
 	cmd, stdout, stderr := newPaperTestCommand(false, false, "")
 	if err := paperCmd.RunE(cmd, []string{"paper-1"}); err != nil {
@@ -280,6 +336,16 @@ func newPaperTestCommand(jsonOut, markdown bool, projectID string) (*cobra.Comma
 }
 
 func writeTestTokens(t *testing.T) {
+	t.Helper()
+	originalCheckCLIAccess := checkCLIAccessFunc
+	checkCLIAccessFunc = func(string) error { return nil }
+	t.Cleanup(func() {
+		checkCLIAccessFunc = originalCheckCLIAccess
+	})
+	savePaperTestTokens(t)
+}
+
+func savePaperTestTokens(t *testing.T) {
 	t.Helper()
 	t.Setenv("PZ_TOKENS_PATH", filepath.Join(t.TempDir(), "tokens.json"))
 	if err := config.SaveTokens(config.Tokens{

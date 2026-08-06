@@ -15,6 +15,7 @@ import (
 var (
 	loginFunc              = runLogin
 	refreshAccessTokenFunc = api.RefreshAccessToken
+	checkCLIAccessFunc     = api.CheckCLIAccess
 	saveTokensFunc         = config.SaveTokens
 )
 
@@ -39,6 +40,8 @@ func runLogin() (config.Tokens, error) {
 		return config.Tokens{}, fmt.Errorf("failed to verify OTP: %w", err)
 	}
 
+	// The broker strictly checks CLI entitlement before consuming the OTP.
+	// Persist its session before any command preflight can fail transiently.
 	if err := config.SaveTokens(tokens); err != nil {
 		return config.Tokens{}, fmt.Errorf("failed to save tokens: %w", err)
 	}
@@ -55,16 +58,25 @@ func loadRequiredAuth() (config.Tokens, error) {
 	tokens, err := config.LoadTokens()
 	if err != nil {
 		fmt.Println("Not logged in.")
-		return loginFunc()
+		tokens, err = loginFunc()
+		if err != nil {
+			return config.Tokens{}, err
+		}
 	}
 
 	if time.Now().Unix() >= tokens.ExpiresAt {
 		if err := refreshSession(&tokens); err != nil {
+			if api.IsCLIAccessError(err) {
+				return config.Tokens{}, err
+			}
 			fmt.Fprintf(os.Stderr, "Token refresh failed: %v\n", err)
 			if err := reauthenticate(&tokens); err != nil {
 				return config.Tokens{}, err
 			}
 		}
+	}
+	if err := checkCLIAccessFunc(tokens.AccessToken); err != nil {
+		return config.Tokens{}, fmt.Errorf("CLI access check failed: %w", err)
 	}
 
 	return tokens, nil
@@ -78,8 +90,14 @@ func loadOptionalAuth() (config.Tokens, bool, error) {
 
 	if time.Now().Unix() >= tokens.ExpiresAt {
 		if err := refreshSession(&tokens); err != nil {
+			if api.IsCLIAccessError(err) {
+				return config.Tokens{}, false, err
+			}
 			return config.Tokens{}, false, nil
 		}
+	}
+	if err := checkCLIAccessFunc(tokens.AccessToken); err != nil {
+		return config.Tokens{}, false, fmt.Errorf("CLI access check failed: %w", err)
 	}
 
 	return tokens, true, nil
@@ -92,6 +110,9 @@ func withAuth[T any](tokens *config.Tokens, fn func(string) (T, error)) (T, erro
 	if errors.Is(err, api.ErrUnauthorized) {
 		if refreshErr := refreshSession(tokens); refreshErr == nil {
 			return fn(tokens.AccessToken)
+		} else if api.IsCLIAccessError(refreshErr) {
+			var zero T
+			return zero, refreshErr
 		}
 
 		fmt.Println("Session expired. Please log in again.")
@@ -113,6 +134,9 @@ func withOptionalAuth[T any](tokens *config.Tokens, hasAuth bool, fn func(string
 	result, err := fn(tokens.AccessToken)
 	if errors.Is(err, api.ErrUnauthorized) {
 		if refreshErr := refreshSession(tokens); refreshErr != nil {
+			if api.IsCLIAccessError(refreshErr) {
+				return zero, false, refreshErr
+			}
 			return zero, false, nil
 		}
 		result, err = fn(tokens.AccessToken)
@@ -129,10 +153,12 @@ func refreshSession(tokens *config.Tokens) error {
 		return errors.New("missing refresh token")
 	}
 
-	newTokens, err := refreshAccessTokenFunc(tokens.RefreshToken)
+	newTokens, err := refreshAccessTokenFunc(tokens.AccessToken, tokens.RefreshToken)
 	if err != nil {
 		return err
 	}
+	// The broker strictly checks CLI entitlement before rotating the refresh
+	// token. Save the returned pair before any later command preflight.
 	if err := saveTokensFunc(newTokens); err != nil {
 		return fmt.Errorf("failed to save refreshed tokens: %w", err)
 	}
