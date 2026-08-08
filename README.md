@@ -12,6 +12,15 @@ New to `pz`? Start here: [docs.paperzilla.ai/guides/cli-getting-started](https:/
 brew install paperzilla-ai/tap/pz
 ```
 
+Homebrew 6.0 and later requires explicit trust for non-official taps. If Homebrew reports `Refusing to load formula paperzilla-ai/tap/pz from untrusted tap paperzilla-ai/tap`, trust only the Paperzilla formula and retry:
+
+```bash
+brew trust --formula paperzilla-ai/tap/pz
+brew install paperzilla-ai/tap/pz
+```
+
+See [Homebrew's tap trust documentation](https://docs.brew.sh/Tap-Trust). Do not disable tap trust globally.
+
 ### Windows
 
 Via [Scoop](https://scoop.sh):
@@ -72,6 +81,14 @@ On interactive terminals, `pz` also prints a colored footer after successful com
 ### macOS
 
 ```bash
+brew update
+brew upgrade pz
+```
+
+If `brew update` refuses to load `paperzilla-ai/tap/pz` from an untrusted tap, run:
+
+```bash
+brew trust --formula paperzilla-ai/tap/pz
 brew update
 brew upgrade pz
 ```
