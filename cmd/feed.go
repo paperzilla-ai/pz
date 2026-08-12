@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/paperzilla/pz/internal/api"
 	"github.com/paperzilla/pz/internal/config"
@@ -40,7 +42,11 @@ var feedCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to get feed token: %w", err)
 			}
-			fmt.Fprintf(out, "%s/api/feed/atom/%s?token=%s\n", config.APIURL(), projectID, tokenResp.Token)
+			feedURL, err := atomFeedURL(config.APIURL(), projectID, tokenResp.Token)
+			if err != nil {
+				return fmt.Errorf("failed to build feed URL: %w", err)
+			}
+			fmt.Fprintln(out, terminalSafeInline(feedURL))
 			return nil
 		}
 
@@ -84,10 +90,27 @@ var feedCmd = &cobra.Command{
 			return fmt.Errorf("failed to fetch project: %w", err)
 		}
 
-		fmt.Fprintf(out, "%s — %d papers (total: %d)\n\n", project.Name, len(feed.Items), feed.Total)
+		fmt.Fprintf(out, "%s — %d papers (total: %d)\n\n", terminalSafeInline(project.Name), len(feed.Items), feed.Total)
 
 		writeProjectPaperFeedList(out, feed.Items)
 
 		return nil
 	},
+}
+
+func atomFeedURL(baseURL, projectID, token string) (string, error) {
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return "", err
+	}
+
+	basePath := strings.TrimRight(base.Path, "/")
+	baseEscapedPath := strings.TrimRight(base.EscapedPath(), "/")
+	base.Path = basePath + "/api/feed/atom/" + projectID
+	base.RawPath = baseEscapedPath + "/api/feed/atom/" + url.PathEscape(projectID)
+	query := base.Query()
+	query.Set("token", token)
+	base.RawQuery = query.Encode()
+	base.Fragment = ""
+	return base.String(), nil
 }

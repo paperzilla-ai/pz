@@ -55,8 +55,8 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	binaryPath := currentBinaryPath(execPath, resolvedPath)
 	guidance := update.GuidanceFor(method, runtime.GOOS, runtime.GOARCH, binaryPath)
 
-	fmt.Fprintf(out, "Current version:  %s\n", displayVersion(Version))
-	fmt.Fprintf(out, "Latest release:   %s\n", displayVersion(release.TagName))
+	fmt.Fprintf(out, "Current version:  %s\n", terminalSafeInline(displayVersion(Version)))
+	fmt.Fprintf(out, "Latest release:   %s\n", terminalSafeInline(displayVersion(release.TagName)))
 	fmt.Fprintf(out, "Install method:   %s\n\n", method.DisplayName())
 
 	fmt.Fprintln(out, releaseStatus(Version, release.TagName))
@@ -65,10 +65,10 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Update with:")
 	for _, step := range guidance.Steps {
-		fmt.Fprintf(out, "  %s\n", step)
+		fmt.Fprintf(out, "  %s\n", terminalSafeInline(step))
 	}
 	fmt.Fprintln(out)
-	fmt.Fprintf(out, "Release notes: %s\n", release.HTMLURL)
+	fmt.Fprintf(out, "Release notes: %s\n", terminalSafeInline(release.HTMLURL))
 
 	return nil
 }

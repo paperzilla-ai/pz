@@ -60,9 +60,9 @@ var feedbackCmd = &cobra.Command{
 			return writeJSON(cmd.OutOrStdout(), feedback)
 		}
 
-		message := fmt.Sprintf("Feedback set: %s", feedback.Vote)
+		message := fmt.Sprintf("Feedback set: %s", terminalSafeInline(feedback.Vote))
 		if feedback.Vote == "downvote" && strings.TrimSpace(feedback.DownvoteReason) != "" {
-			message += fmt.Sprintf(" (%s)", feedback.DownvoteReason)
+			message += fmt.Sprintf(" (%s)", terminalSafeInline(feedback.DownvoteReason))
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), message)
 		return nil

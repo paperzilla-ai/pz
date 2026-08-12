@@ -14,7 +14,7 @@ func writeCanonicalPaper(w io.Writer, paper api.Paper) {
 	fmt.Fprintf(w, "Short ID:        %s\n", displayValue(paper.ShortID))
 	fmt.Fprintf(w, "Slug:            %s\n", displayValue(paper.Slug))
 	if label := paperDetailLabel(paper); label != "" {
-		fmt.Fprintf(w, "Source:          %s\n", label)
+		fmt.Fprintf(w, "Source:          %s\n", terminalSafeInline(label))
 	}
 	fmt.Fprintf(w, "Published:       %s\n", formatTime(paper.PublishedDate))
 	fmt.Fprintf(w, "Authors:         %s\n", displayValue(authorNames(paper.Authors)))
@@ -23,7 +23,7 @@ func writeCanonicalPaper(w io.Writer, paper api.Paper) {
 	fmt.Fprintf(w, "DOI:             %s\n", displayValue(paper.DOI))
 
 	if strings.TrimSpace(paper.Abstract) != "" {
-		fmt.Fprintf(w, "\nAbstract:\n  %s\n", paper.Abstract)
+		fmt.Fprintf(w, "\nAbstract:\n  %s\n", terminalSafeBlock(paper.Abstract, "  "))
 	}
 }
 
@@ -32,14 +32,14 @@ func writeProjectPaper(w io.Writer, projectPaper api.ProjectPaper) {
 	fmt.Fprintf(w, "Recommendation ID: %s\n", displayValue(projectPaper.ID))
 	fmt.Fprintf(w, "Short ID:          %s\n", displayValue(projectPaper.ShortID))
 	fmt.Fprintf(w, "Relevance:         %s\n", formatRelevance(projectPaper.RelevanceClass, projectPaper.RelevanceScore))
-	fmt.Fprintf(w, "Feedback:          %s\n", formatFeedback(projectPaper.Feedback))
+	fmt.Fprintf(w, "Feedback:          %s\n", terminalSafeInline(formatFeedback(projectPaper.Feedback)))
 	fmt.Fprintf(w, "Ready At:          %s\n", formatTime(projectPaper.ReadyAt))
 
 	if strings.TrimSpace(projectPaper.PersonalizedNote) != "" {
-		fmt.Fprintf(w, "\nNote:\n  %s\n", projectPaper.PersonalizedNote)
+		fmt.Fprintf(w, "\nNote:\n  %s\n", terminalSafeBlock(projectPaper.PersonalizedNote, "  "))
 	}
 	if strings.TrimSpace(projectPaper.Summary) != "" {
-		fmt.Fprintf(w, "\nSummary:\n  %s\n", projectPaper.Summary)
+		fmt.Fprintf(w, "\nSummary:\n  %s\n", terminalSafeBlock(projectPaper.Summary, "  "))
 	}
 
 	paper := projectPaper.Paper
@@ -47,7 +47,7 @@ func writeProjectPaper(w io.Writer, projectPaper api.ProjectPaper) {
 	fmt.Fprintf(w, "  ID:              %s\n", displayValue(paper.ID))
 	fmt.Fprintf(w, "  Short ID:        %s\n", displayValue(paper.ShortID))
 	if label := paperDetailLabel(paper); label != "" {
-		fmt.Fprintf(w, "  Source:          %s\n", label)
+		fmt.Fprintf(w, "  Source:          %s\n", terminalSafeInline(label))
 	}
 	fmt.Fprintf(w, "  Published:       %s\n", formatTime(paper.PublishedDate))
 	fmt.Fprintf(w, "  Authors:         %s\n", displayValue(authorNames(paper.Authors)))
@@ -56,7 +56,7 @@ func writeProjectPaper(w io.Writer, projectPaper api.ProjectPaper) {
 	fmt.Fprintf(w, "  DOI:             %s\n", displayValue(paper.DOI))
 
 	if strings.TrimSpace(paper.Abstract) != "" {
-		fmt.Fprintf(w, "\nAbstract:\n  %s\n", paper.Abstract)
+		fmt.Fprintf(w, "\nAbstract:\n  %s\n", terminalSafeBlock(paper.Abstract, "  "))
 	}
 }
 
@@ -80,7 +80,7 @@ func displayValue(value string) string {
 	if strings.TrimSpace(value) == "" {
 		return "—"
 	}
-	return value
+	return terminalSafeInline(value)
 }
 
 func paperListLabel(paper api.Paper) string {
@@ -100,7 +100,7 @@ func joinDisplayParts(parts ...string) string {
 		if strings.TrimSpace(part) == "" {
 			continue
 		}
-		display = append(display, part)
+		display = append(display, terminalSafeInline(part))
 	}
 	return strings.Join(display, " · ")
 }

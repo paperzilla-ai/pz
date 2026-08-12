@@ -50,6 +50,19 @@ func TestBuildUpdateNoticeForSourceBuild(t *testing.T) {
 	}
 }
 
+func TestBuildUpdateNoticeEscapesRemoteControlsAndKeepsOwnColor(t *testing.T) {
+	notice := buildUpdateNotice("dev", update.Release{TagName: "v0.3.0\x1b]52;c;payload\a"}, true)
+	if strings.Contains(notice, "\x1b]52") || strings.Contains(notice, "\a") {
+		t.Fatalf("notice contains remote controls: %q", notice)
+	}
+	if !strings.Contains(notice, `0.3.0\x1b]52;c;payload\x07`) {
+		t.Fatalf("notice does not visibly escape remote controls: %q", notice)
+	}
+	if !strings.Contains(notice, ansiYellow) || !strings.Contains(notice, ansiReset) {
+		t.Fatalf("notice lost intentional CLI color: %q", notice)
+	}
+}
+
 func TestMaybePrintUpdateNoticeSkipsUpdateCommand(t *testing.T) {
 	origVersion := Version
 	origFetchCachedLatestRelease := fetchCachedLatestRelease

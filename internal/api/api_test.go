@@ -376,6 +376,74 @@ func TestFetchPublicPaper(t *testing.T) {
 	}
 }
 
+func TestFetchPublicPaperRejectsOversizedResponse(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, `{"id":"paper-1","title":"`)
+		_, _ = io.WriteString(w, strings.Repeat("a", (16<<20)+1))
+		_, _ = io.WriteString(w, `"}`)
+	})
+	defer server.Close()
+
+	_, err := FetchPublicPaper("paper-1")
+	if err == nil || !strings.Contains(err.Error(), "response body exceeds") {
+		t.Fatalf("err = %v, want response size error", err)
+	}
+}
+
+func TestResponseBodyLimits(t *testing.T) {
+	if maxJSONResponseBytes != 16<<20 {
+		t.Fatalf("maxJSONResponseBytes = %d, want %d", maxJSONResponseBytes, 16<<20)
+	}
+	if maxMarkdownResponseBytes != 64<<20 {
+		t.Fatalf("maxMarkdownResponseBytes = %d, want %d", maxMarkdownResponseBytes, 64<<20)
+	}
+
+	data, err := readResponseBody(strings.NewReader("1234"), 4)
+	if err != nil {
+		t.Fatalf("readResponseBody at limit: %v", err)
+	}
+	if got := string(data); got != "1234" {
+		t.Fatalf("body = %q, want %q", got, "1234")
+	}
+
+	data, err = readResponseBody(strings.NewReader("12345"), 4)
+	if err == nil || !strings.Contains(err.Error(), "exceeds 4-byte limit") {
+		t.Fatalf("err = %v, want response size error", err)
+	}
+	if data != nil {
+		t.Fatalf("oversized read returned partial data: %q", data)
+	}
+}
+
+func TestAPIErrorResponseUsesJSONLimit(t *testing.T) {
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = io.WriteString(w, strings.Repeat("a", int(maxJSONResponseBytes)+1))
+	})
+	defer server.Close()
+
+	err := SendOTP("test@example.com")
+	if err == nil || !strings.Contains(err.Error(), "response body exceeds") {
+		t.Fatalf("err = %v, want response size error", err)
+	}
+}
+
+func TestFetchPublicPaperMarkdownAllowsLargerMarkdownLimit(t *testing.T) {
+	body := strings.Repeat("m", int(maxJSONResponseBytes)+1)
+	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, body)
+	})
+	defer server.Close()
+
+	markdown, err := FetchPublicPaperMarkdown("paper-1")
+	if err != nil {
+		t.Fatalf("FetchPublicPaperMarkdown: %v", err)
+	}
+	if markdown != body {
+		t.Fatalf("markdown length = %d, want %d", len(markdown), len(body))
+	}
+}
+
 func TestFetchPaperMarkdown(t *testing.T) {
 	server := startTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/papers/paper-1/markdown" {

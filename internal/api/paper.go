@@ -59,7 +59,7 @@ func FetchLegacyPaperMarkdown(accessToken, id string) (string, error) {
 }
 
 func fetchMarkdown(path, accessToken string) (string, error) {
-	body, _, err := doRequestDetailed("GET", path, nil, accessToken)
+	body, _, err := doRequestDetailed("GET", path, nil, accessToken, maxMarkdownResponseBytes)
 	if errors.Is(err, ErrUnauthorized) {
 		return "", err
 	}

@@ -16,6 +16,7 @@ const (
 	LatestReleaseAPIURL  = "https://api.github.com/repos/paperzilla-ai/pz/releases/latest"
 	LatestReleasePageURL = "https://github.com/paperzilla-ai/pz/releases/latest"
 	githubAPIVersion     = "2026-03-10"
+	maxReleaseBodyBytes  = 1 << 20
 )
 
 type Release struct {
@@ -62,7 +63,7 @@ func (c Checker) LatestRelease(ctx context.Context) (Release, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := readResponseBody(resp.Body, maxReleaseBodyBytes)
 	if err != nil {
 		return Release{}, err
 	}
@@ -87,6 +88,17 @@ func (c Checker) LatestRelease(ctx context.Context) (Release, error) {
 	}
 
 	return release, nil
+}
+
+func readResponseBody(body io.Reader, limit int64) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(body, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("response body exceeds %d-byte limit", limit)
+	}
+	return data, nil
 }
 
 type InstallMethod string

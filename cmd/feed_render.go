@@ -17,7 +17,7 @@ func writeProjectPaperFeedList(w io.Writer, items []api.ProjectPaper) {
 			prefix += " " + marker
 		}
 
-		title := p.PaperTitle
+		title := terminalSafeInline(p.PaperTitle)
 		if len(title) > 80 {
 			title = title[:77] + "..."
 		}

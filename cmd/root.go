@@ -51,6 +51,6 @@ func Execute() {
 		maybePrintUpdateNotice(executedCmd, os.Stderr)
 		return
 	}
-	fmt.Fprintln(os.Stderr, err)
+	fmt.Fprintln(os.Stderr, terminalSafeInline(err.Error()))
 	os.Exit(1)
 }

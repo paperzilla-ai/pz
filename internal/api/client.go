@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -14,6 +15,11 @@ import (
 var ErrUnauthorized = errors.New("unauthorized")
 
 const supportedClientHeader = "cli"
+
+const (
+	maxJSONResponseBytes     int64 = 16 << 20
+	maxMarkdownResponseBytes int64 = 64 << 20
+)
 
 var clientVersion = "dev"
 
@@ -30,11 +36,11 @@ func supportedUserAgent() string {
 }
 
 func doRequest(method, path string, body any, accessToken string) ([]byte, error) {
-	respBody, _, err := doRequestDetailed(method, path, body, accessToken)
+	respBody, _, err := doRequestDetailed(method, path, body, accessToken, maxJSONResponseBytes)
 	return respBody, err
 }
 
-func doRequestDetailed(method, path string, body any, accessToken string) ([]byte, int, error) {
+func doRequestDetailed(method, path string, body any, accessToken string, successLimit int64) ([]byte, int, error) {
 	url := config.APIURL() + path
 
 	var reqBody io.Reader
@@ -64,7 +70,11 @@ func doRequestDetailed(method, path string, body any, accessToken string) ([]byt
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	responseLimit := successLimit
+	if resp.StatusCode >= 400 {
+		responseLimit = maxJSONResponseBytes
+	}
+	respBody, err := readResponseBody(resp.Body, responseLimit)
 	if err != nil {
 		return nil, resp.StatusCode, err
 	}
@@ -77,4 +87,15 @@ func doRequestDetailed(method, path string, body any, accessToken string) ([]byt
 	}
 
 	return respBody, resp.StatusCode, nil
+}
+
+func readResponseBody(body io.Reader, limit int64) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(body, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("response body exceeds %d-byte limit", limit)
+	}
+	return data, nil
 }

@@ -2,6 +2,7 @@ package update
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,6 +42,47 @@ func TestCheckerLatestRelease(t *testing.T) {
 	}
 	if release.HTMLURL != "https://github.com/paperzilla-ai/pz/releases/tag/v0.3.0" {
 		t.Fatalf("HTMLURL = %q", release.HTMLURL)
+	}
+}
+
+func TestCheckerLatestReleaseRejectsOversizedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, `{"tag_name":"v0.3.0","html_url":"`)
+		_, _ = io.WriteString(w, strings.Repeat("a", (1<<20)+1))
+		_, _ = io.WriteString(w, `"}`)
+	}))
+	defer server.Close()
+
+	checker := Checker{
+		Client:           server.Client(),
+		LatestReleaseURL: server.URL,
+	}
+
+	_, err := checker.LatestRelease(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "response body exceeds") {
+		t.Fatalf("err = %v, want response size error", err)
+	}
+}
+
+func TestReleaseResponseBodyLimit(t *testing.T) {
+	if maxReleaseBodyBytes != 1<<20 {
+		t.Fatalf("maxReleaseBodyBytes = %d, want %d", maxReleaseBodyBytes, 1<<20)
+	}
+
+	data, err := readResponseBody(strings.NewReader("1234"), 4)
+	if err != nil {
+		t.Fatalf("readResponseBody at limit: %v", err)
+	}
+	if got := string(data); got != "1234" {
+		t.Fatalf("body = %q, want %q", got, "1234")
+	}
+
+	data, err = readResponseBody(strings.NewReader("12345"), 4)
+	if err == nil || !strings.Contains(err.Error(), "exceeds 4-byte limit") {
+		t.Fatalf("err = %v, want response size error", err)
+	}
+	if data != nil {
+		t.Fatalf("oversized read returned partial data: %q", data)
 	}
 }
 

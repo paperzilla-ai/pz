@@ -47,13 +47,13 @@ var projectCmd = &cobra.Command{
 			return writeJSON(out, p)
 		}
 
-		fmt.Fprintf(out, "Name:             %s\n", p.Name)
-		fmt.Fprintf(out, "ID:               %s\n", p.ID)
-		fmt.Fprintf(out, "Mode:             %s\n", p.Mode)
-		fmt.Fprintf(out, "Visibility:       %s\n", p.Visibility)
-		fmt.Fprintf(out, "Matching State:   %s\n", p.MatchingState)
-		fmt.Fprintf(out, "Email Frequency:  %s\n", p.EmailFrequency)
-		fmt.Fprintf(out, "Email Time:       %s\n", p.EmailTime)
+		fmt.Fprintf(out, "Name:             %s\n", terminalSafeInline(p.Name))
+		fmt.Fprintf(out, "ID:               %s\n", terminalSafeInline(p.ID))
+		fmt.Fprintf(out, "Mode:             %s\n", terminalSafeInline(p.Mode))
+		fmt.Fprintf(out, "Visibility:       %s\n", terminalSafeInline(p.Visibility))
+		fmt.Fprintf(out, "Matching State:   %s\n", terminalSafeInline(p.MatchingState))
+		fmt.Fprintf(out, "Email Frequency:  %s\n", terminalSafeInline(p.EmailFrequency))
+		fmt.Fprintf(out, "Email Time:       %s\n", terminalSafeInline(p.EmailTime))
 		fmt.Fprintf(out, "Max Candidates:   %d\n", p.MaxCandidates)
 		fmt.Fprintf(out, "Max Papers/Digest:%d\n", p.MaxPapersPerDigests)
 		fmt.Fprintf(out, "Created:          %s\n", formatTime(p.CreatedAt))
@@ -61,7 +61,7 @@ var projectCmd = &cobra.Command{
 		fmt.Fprintf(out, "Last Digest:      %s\n", formatTime(p.LastDigestSentAt))
 
 		if p.InterestDescription != "" {
-			fmt.Fprintf(out, "\nInterest:\n  %s\n", p.InterestDescription)
+			fmt.Fprintf(out, "\nInterest:\n  %s\n", terminalSafeBlock(p.InterestDescription, "  "))
 		}
 
 		return nil
@@ -97,11 +97,11 @@ var projectListCmd = &cobra.Command{
 
 		fmt.Fprintf(out, "%-36s  %-25s  %-10s  %-10s  %s\n", "ID", "NAME", "MODE", "VISIBILITY", "CREATED")
 		for _, p := range projects {
-			name := p.Name
+			name := terminalSafeInline(p.Name)
 			if len(name) > 25 {
 				name = name[:22] + "..."
 			}
-			fmt.Fprintf(out, "%-36s  %-25s  %-10s  %-10s  %s\n", p.ID, name, p.Mode, p.Visibility, formatTime(p.CreatedAt))
+			fmt.Fprintf(out, "%-36s  %-25s  %-10s  %-10s  %s\n", terminalSafeInline(p.ID), name, terminalSafeInline(p.Mode), terminalSafeInline(p.Visibility), formatTime(p.CreatedAt))
 		}
 
 		return nil
@@ -128,5 +128,5 @@ func formatTime(s string) string {
 	if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
 		return t.Format("2006-01-02 15:04")
 	}
-	return s
+	return terminalSafeInline(s)
 }

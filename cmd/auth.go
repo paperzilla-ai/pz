@@ -69,7 +69,7 @@ func loadRequiredAuth() (config.Tokens, error) {
 			if api.IsCLIAccessError(err) {
 				return config.Tokens{}, err
 			}
-			fmt.Fprintf(os.Stderr, "Token refresh failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Token refresh failed: %s\n", terminalSafeInline(err.Error()))
 			if err := reauthenticate(&tokens); err != nil {
 				return config.Tokens{}, err
 			}

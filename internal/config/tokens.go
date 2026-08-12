@@ -22,12 +22,32 @@ func tokensPath() string {
 
 func SaveTokens(t Tokens) error {
 	path := tokensPath()
-	os.MkdirAll(filepath.Dir(path), 0700)
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
 	data, err := json.MarshalIndent(t, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0600)
+
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	if err := file.Chmod(0600); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if err := file.Truncate(0); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		return err
+	}
+	return file.Close()
 }
 
 func LoadTokens() (Tokens, error) {

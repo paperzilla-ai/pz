@@ -188,7 +188,7 @@ func fetchLegacyPaperMarkdownFallback(paperRef string) (string, bool, error) {
 }
 
 func printLegacyPaperWarning(errOut interface{ Write([]byte) (int, error) }, ref string) {
-	fmt.Fprintf(errOut, "Warning: %q looks like a recommendation ID. `pz paper <id>` compatibility will be removed; use `pz rec %s` instead.\n", ref, ref)
+	fmt.Fprintf(errOut, "Warning: %q looks like a recommendation ID. `pz paper <id>` compatibility will be removed; use `pz rec %s` instead.\n", ref, terminalSafeInline(ref))
 }
 
 func canonicalMarkdownNotReadyMessage() string {
@@ -196,6 +196,7 @@ func canonicalMarkdownNotReadyMessage() string {
 }
 
 func recommendationHintError(ref, suffix string) error {
+	ref = terminalSafeInline(ref)
 	if suffix != "" {
 		return fmt.Errorf("paper not found. If this is a recommendation ID, use `pz rec %s %s`", ref, suffix)
 	}

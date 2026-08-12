@@ -66,6 +66,28 @@ func TestWriteCanonicalPaperOmitsMetadataSection(t *testing.T) {
 	}
 }
 
+func TestWriteCanonicalPaperEscapesTerminalControls(t *testing.T) {
+	var out bytes.Buffer
+	writeCanonicalPaper(&out, api.Paper{
+		ID:       "paper-1",
+		Title:    "Safe \x1b[2J\rforged\nline",
+		Abstract: "First line\r\nSecond \x1b]52;c;payload\a\u0085",
+	})
+
+	output := out.String()
+	for _, control := range []string{"\x1b", "\r", "\a", "\u0085"} {
+		if strings.Contains(output, control) {
+			t.Fatalf("output contains active control %q: %q", control, output)
+		}
+	}
+	if !strings.Contains(output, `Title:           Safe \x1b[2J\rforged\nline`) {
+		t.Fatalf("title controls were not escaped visibly: %q", output)
+	}
+	if !strings.Contains(output, "Abstract:\n  First line\n  Second \\x1b]52;c;payload\\x07\\u0085\n") {
+		t.Fatalf("block controls or indentation were not preserved safely: %q", output)
+	}
+}
+
 func assertNoUnsafeSourceNamespaces(t *testing.T, output string) {
 	t.Helper()
 

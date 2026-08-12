@@ -86,3 +86,37 @@ func TestSaveTokensOverwrite(t *testing.T) {
 		t.Errorf("got %+v, want %+v", got, second)
 	}
 }
+
+func TestSaveTokensOverwriteRepairsFilePermissions(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "tokens.json")
+	t.Setenv("PZ_TOKENS_PATH", path)
+
+	if err := os.WriteFile(path, []byte(`{"access_token":"exposed"}`), 0644); err != nil {
+		t.Fatalf("precreate token file: %v", err)
+	}
+	if err := os.Chmod(path, 0644); err != nil {
+		t.Fatalf("make token file permissive: %v", err)
+	}
+
+	want := Tokens{AccessToken: "new", RefreshToken: "new_refresh", ExpiresAt: 2}
+	if err := SaveTokens(want); err != nil {
+		t.Fatalf("SaveTokens: %v", err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Stat: %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Fatalf("file permissions = %o, want 0600", perm)
+	}
+
+	got, err := LoadTokens()
+	if err != nil {
+		t.Fatalf("LoadTokens: %v", err)
+	}
+	if got != want {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}

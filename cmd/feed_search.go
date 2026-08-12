@@ -72,8 +72,8 @@ var feedSearchCmd = &cobra.Command{
 			return fmt.Errorf("failed to fetch project: %w", err)
 		}
 
-		fmt.Fprintf(out, "%s — %d papers\n", project.Name, len(search.Items))
-		fmt.Fprintf(out, "Query: %s\n", search.Query)
+		fmt.Fprintf(out, "%s — %d papers\n", terminalSafeInline(project.Name), len(search.Items))
+		fmt.Fprintf(out, "Query: %s\n", terminalSafeInline(search.Query))
 		fmt.Fprintf(out, "Has more: %t\n\n", search.HasMore)
 		writeProjectPaperFeedList(out, search.Items)
 		return nil
