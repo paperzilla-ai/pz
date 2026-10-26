@@ -30,6 +30,10 @@ brews:
     homepage: https://paperzilla.ai
     description: CLI for Paperzilla — AI-powered scientific paper discovery
     license: MIT
+    custom_block: |
+      on_macos do
+        depends_on macos: :monterey
+      end
     install: |
       bin.install "pz"
 

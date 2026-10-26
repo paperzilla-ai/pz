@@ -8,6 +8,8 @@ New to `pz`? Start here: [docs.paperzilla.ai/guides/cli-getting-started](https:/
 
 ### macOS
 
+Requires macOS 12 Monterey or later.
+
 ```bash
 brew install paperzilla-ai/tap/pz
 ```
@@ -32,6 +34,8 @@ scoop install pz
 
 ### Linux
 
+Requires Linux kernel 3.2 or later.
+
 Download the latest binary from [GitHub Releases](https://github.com/paperzilla-ai/pz/releases):
 
 ```bash
@@ -41,7 +45,7 @@ sudo mv pz /usr/local/bin/
 
 ### Build from source
 
-Requires Go 1.23+:
+Requires Go 1.26.10 or later:
 
 ```bash
 git clone https://github.com/paperzilla-ai/pz.git
