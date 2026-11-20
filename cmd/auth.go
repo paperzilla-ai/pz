@@ -82,7 +82,7 @@ func loadRequiredAuth() (config.Tokens, error) {
 	return tokens, nil
 }
 
-func loadOptionalAuth() (config.Tokens, bool, error) {
+func loadOptionalSession() (config.Tokens, bool, error) {
 	tokens, err := config.LoadTokens()
 	if err != nil {
 		return config.Tokens{}, false, nil
@@ -95,6 +95,14 @@ func loadOptionalAuth() (config.Tokens, bool, error) {
 			}
 			return config.Tokens{}, false, nil
 		}
+	}
+	return tokens, true, nil
+}
+
+func loadOptionalAuth() (config.Tokens, bool, error) {
+	tokens, hasAuth, err := loadOptionalSession()
+	if err != nil || !hasAuth {
+		return tokens, hasAuth, err
 	}
 	if err := checkCLIAccessFunc(tokens.AccessToken); err != nil {
 		return config.Tokens{}, false, fmt.Errorf("CLI access check failed: %w", err)

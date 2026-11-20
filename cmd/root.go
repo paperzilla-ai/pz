@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -52,5 +53,16 @@ func Execute() {
 		return
 	}
 	fmt.Fprintln(os.Stderr, terminalSafeInline(err.Error()))
-	os.Exit(1)
+	os.Exit(commandExitCode(err))
+}
+
+func commandExitCode(err error) int {
+	switch {
+	case err == nil:
+		return 0
+	case errors.Is(err, errPaperImportPending):
+		return 75
+	default:
+		return 1
+	}
 }
