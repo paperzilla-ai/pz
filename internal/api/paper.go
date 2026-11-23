@@ -8,9 +8,18 @@ import (
 )
 
 type ObservedRevision struct {
-	PaperID string `json:"paper_id"`
-	Version string `json:"version"`
-	Path    string `json:"path"`
+	PaperID            string  `json:"paper_id"`
+	Version            string  `json:"version"`
+	Path               string  `json:"path"`
+	Posted             *string `json:"posted"`
+	PostedPrecision    *string `json:"posted_precision"`
+	PostedBasis        *string `json:"posted_basis"`
+	Published          *string `json:"published"`
+	PublishedPrecision *string `json:"published_precision"`
+	PublishedBasis     *string `json:"published_basis"`
+	Seen               *string `json:"seen"`
+	SeenPrecision      *string `json:"seen_precision"`
+	SeenBasis          *string `json:"seen_basis"`
 }
 
 type PaperRevisionHistory struct {

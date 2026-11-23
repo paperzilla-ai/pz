@@ -152,6 +152,7 @@ Read a canonical paper by Paperzilla paper ID:
 pz paper <paper-id>
 pz paper <paper-id> --json
 pz paper <paper-id> --markdown
+# Show observed versions with posting, journal publication, and first catalog ingestion dates
 pz paper <paper-id> --revisions
 pz paper <paper-id> --revisions --json
 ```

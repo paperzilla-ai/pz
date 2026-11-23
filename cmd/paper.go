@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/paperzilla/pz/internal/api"
 	"github.com/paperzilla/pz/internal/config"
@@ -71,11 +72,22 @@ func runPaperRevisions(cmd *cobra.Command, paperRef string, jsonOut bool) error 
 		fmt.Fprintln(out, "No observed revisions.")
 		return nil
 	}
+	w := tabwriter.NewWriter(out, 0, 1, 2, ' ', 0)
+	fmt.Fprintln(w, "VERSION\tPOSTED\tPUBLISHED\tSEEN (UTC)\tPAPER ID\tLINK")
 	for _, rev := range history.Revisions {
 		link := strings.TrimRight(config.APIURL(), "/") + rev.Path
-		fmt.Fprintf(out, "%s  %s  %s\n", terminalSafeInline(rev.Version), terminalSafeInline(rev.PaperID), terminalSafeInline(link))
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", terminalSafeInline(rev.Version),
+			revisionDate(rev.Posted), revisionDate(rev.Published), revisionDate(rev.Seen),
+			terminalSafeInline(rev.PaperID), terminalSafeInline(link))
 	}
-	return nil
+	return w.Flush()
+}
+
+func revisionDate(value *string) string {
+	if value == nil {
+		return "—"
+	}
+	return displayValue(*value)
 }
 
 func runCanonicalPaper(cmd *cobra.Command, paperRef string, jsonOut bool) error {

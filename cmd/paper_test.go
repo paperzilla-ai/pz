@@ -21,7 +21,7 @@ func TestPaperRevisions(t *testing.T) {
 		if r.URL.Path != "/api/public/papers/abcd1234/revisions" || r.Header.Get("Authorization") != "" {
 			t.Errorf("unexpected public request %s", r.URL.Path)
 		}
-		_, _ = w.Write([]byte(`{"paper_id":"older","revisions":[{"version":"v3","paper_id":"newer","path":"/p/newer"},{"version":"v1","paper_id":"older","path":"/p/older"}]}`))
+		_, _ = w.Write([]byte(`{"paper_id":"older","revisions":[{"version":"v3","paper_id":"newer","path":"/p/newer","posted":"2024-04","posted_precision":"month","posted_basis":"crossref-posted","published":null,"seen":"2026-11-20T09:14:00Z","seen_precision":"day","seen_basis":"paperzilla-ingested"},{"version":"v1","paper_id":"older","path":"/p/older"}]}`))
 	}))
 	defer server.Close()
 	t.Setenv("PZ_API_URL", server.URL)
@@ -33,10 +33,12 @@ func TestPaperRevisions(t *testing.T) {
 			t.Fatal(err)
 		}
 		if asJSON {
-			if !strings.Contains(out.String(), `"path": "/p/older"`) {
+			if !strings.Contains(out.String(), `"path": "/p/older"`) || !strings.Contains(out.String(), `"posted_precision": "month"`) || !strings.Contains(out.String(), `"published": null`) || !strings.Contains(out.String(), `"seen_basis": "paperzilla-ingested"`) {
 				t.Fatal(out.String())
 			}
-		} else if !strings.Contains(out.String(), "v3  newer  "+server.URL+"/p/newer\nv1  older  "+server.URL+"/p/older") {
+		} else if lines := strings.Split(strings.TrimSpace(out.String()), "\n"); len(lines) != 3 ||
+			strings.Join(strings.Fields(lines[1]), " ") != "v3 2024-04 — 2026-11-20T09:14:00Z newer "+server.URL+"/p/newer" ||
+			strings.Join(strings.Fields(lines[2]), " ") != "v1 — — — older "+server.URL+"/p/older" {
 			t.Fatal(out.String())
 		}
 	}
