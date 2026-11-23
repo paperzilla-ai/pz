@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/paperzilla/pz/internal/api"
+	"github.com/paperzilla/pz/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +18,7 @@ var (
 
 func init() {
 	paperCmd.Flags().BoolP("json", "j", false, "Output as JSON")
+	paperCmd.Flags().Bool("revisions", false, "List observed source revisions")
 	paperCmd.Flags().Bool("markdown", false, "Print raw markdown")
 	paperCmd.Flags().String("project", "", "Resolve this paper inside one of your projects")
 }
@@ -28,6 +31,13 @@ var paperCmd = &cobra.Command{
 		jsonOut, _ := cmd.Flags().GetBool("json")
 		markdownOut, _ := cmd.Flags().GetBool("markdown")
 		projectID, _ := cmd.Flags().GetString("project")
+		revisions, _ := cmd.Flags().GetBool("revisions")
+		if revisions {
+			if markdownOut || projectID != "" {
+				return fmt.Errorf("--revisions cannot be combined with --markdown or --project")
+			}
+			return runPaperRevisions(cmd, args[0], jsonOut)
+		}
 		if jsonOut && markdownOut {
 			return fmt.Errorf("--json and --markdown cannot be used together")
 		}
@@ -41,6 +51,31 @@ var paperCmd = &cobra.Command{
 		}
 		return runCanonicalPaper(cmd, paperRef, jsonOut)
 	},
+}
+
+func runPaperRevisions(cmd *cobra.Command, paperRef string, jsonOut bool) error {
+	if _, err := loadRequiredAuth(); err != nil {
+		return err
+	}
+	history, err := api.FetchPaperRevisions(paperRef)
+	if err != nil {
+		return fmt.Errorf("failed to fetch paper revisions: %w", err)
+	}
+	out := cmd.OutOrStdout()
+	if jsonOut {
+		encoder := json.NewEncoder(out)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(history)
+	}
+	if len(history.Revisions) == 0 {
+		fmt.Fprintln(out, "No observed revisions.")
+		return nil
+	}
+	for _, rev := range history.Revisions {
+		link := strings.TrimRight(config.APIURL(), "/") + rev.Path
+		fmt.Fprintf(out, "%s  %s  %s\n", terminalSafeInline(rev.Version), terminalSafeInline(rev.PaperID), terminalSafeInline(link))
+	}
+	return nil
 }
 
 func runCanonicalPaper(cmd *cobra.Command, paperRef string, jsonOut bool) error {

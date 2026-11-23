@@ -19,7 +19,7 @@ func writeCanonicalPaper(w io.Writer, paper api.Paper) {
 	fmt.Fprintf(w, "Published:       %s\n", formatTime(paper.PublishedDate))
 	fmt.Fprintf(w, "Authors:         %s\n", displayValue(authorNames(paper.Authors)))
 	fmt.Fprintf(w, "URL:             %s\n", displayValue(paper.URL))
-	fmt.Fprintf(w, "PDF URL:         %s\n", displayValue(paper.PdfURL))
+	writePaperPDF(w, paper, "")
 	fmt.Fprintf(w, "DOI:             %s\n", displayValue(paper.DOI))
 
 	if strings.TrimSpace(paper.Abstract) != "" {
@@ -52,7 +52,7 @@ func writeProjectPaper(w io.Writer, projectPaper api.ProjectPaper) {
 	fmt.Fprintf(w, "  Published:       %s\n", formatTime(paper.PublishedDate))
 	fmt.Fprintf(w, "  Authors:         %s\n", displayValue(authorNames(paper.Authors)))
 	fmt.Fprintf(w, "  URL:             %s\n", displayValue(paper.URL))
-	fmt.Fprintf(w, "  PDF URL:         %s\n", displayValue(paper.PdfURL))
+	writePaperPDF(w, paper, "  ")
 	fmt.Fprintf(w, "  DOI:             %s\n", displayValue(paper.DOI))
 
 	if strings.TrimSpace(paper.Abstract) != "" {
@@ -83,13 +83,32 @@ func displayValue(value string) string {
 	return terminalSafeInline(value)
 }
 
+func writePaperPDF(w io.Writer, paper api.Paper, indent string) {
+	if paper.PdfURL == nil && paper.PublisherPDFURL != "" {
+		fmt.Fprintf(w, "%sPublisher PDF:   %s\n", indent, displayValue(paper.PublisherPDFURL))
+		return
+	}
+	value := ""
+	if paper.PdfURL != nil {
+		value = *paper.PdfURL
+	}
+	fmt.Fprintf(w, "%sPDF URL:         %s\n", indent, displayValue(value))
+}
+
+func revisionLabel(paper api.Paper) string {
+	if paper.Revision == nil {
+		return ""
+	}
+	return paper.Revision.Version
+}
+
 func paperListLabel(paper api.Paper) string {
-	return strings.TrimSpace(paper.VenueName)
+	return joinDisplayParts(paper.VenueName, revisionLabel(paper))
 }
 
 func paperDetailLabel(paper api.Paper) string {
 	if label := strings.TrimSpace(paper.ReferenceLabel); label != "" {
-		return label
+		return joinDisplayParts(label, revisionLabel(paper))
 	}
 	return paperListLabel(paper)
 }

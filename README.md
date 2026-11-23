@@ -152,6 +152,8 @@ Read a canonical paper by Paperzilla paper ID:
 pz paper <paper-id>
 pz paper <paper-id> --json
 pz paper <paper-id> --markdown
+pz paper <paper-id> --revisions
+pz paper <paper-id> --revisions --json
 ```
 
 Show that paper in the context of one of your projects:

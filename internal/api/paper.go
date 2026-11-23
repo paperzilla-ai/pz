@@ -4,7 +4,30 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 )
+
+type ObservedRevision struct {
+	PaperID string `json:"paper_id"`
+	Version string `json:"version"`
+	Path    string `json:"path"`
+}
+
+type PaperRevisionHistory struct {
+	PaperID   string             `json:"paper_id"`
+	Revisions []ObservedRevision `json:"revisions"`
+}
+
+func FetchPaperRevisions(id string) (PaperRevisionHistory, error) {
+	var history PaperRevisionHistory
+	path := fmt.Sprintf("/api/public/papers/%s/revisions", url.PathEscape(id))
+	body, err := doRequest("GET", path, nil, "")
+	if err != nil {
+		return history, err
+	}
+	err = json.Unmarshal(body, &history)
+	return history, err
+}
 
 func FetchPublicPaper(id string) (Paper, error) {
 	path := fmt.Sprintf("/api/public/papers/%s", id)

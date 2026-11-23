@@ -20,24 +20,33 @@ type Feedback struct {
 	UpdatedAt      string `json:"updated_at"`
 }
 
+type NativePaperRevision struct {
+	Source   string `json:"source"`
+	NativeID string `json:"native_id"`
+	Version  string `json:"version"`
+}
+
 type Paper struct {
-	ID             string   `json:"id"`
-	Title          string   `json:"title"`
-	Abstract       string   `json:"abstract"`
-	Authors        []Author `json:"authors"`
-	PublishedDate  string   `json:"published_date"`
-	PdfURL         string   `json:"pdf_url"`
-	URL            string   `json:"url"`
-	DOI            string   `json:"doi"`
-	VenueName      string   `json:"venue_name"`
-	ReferenceLabel string   `json:"reference_label"`
-	SourceID       int      `json:"source_id"`
-	Source         *Source  `json:"source"`
-	SourcePaperID  string   `json:"source_paper_id"`
-	ShortID        string   `json:"short_id"`
-	Slug           string   `json:"slug"`
-	Metadata       any      `json:"metadata"`
-	MarkdownReady  bool     `json:"markdown_ready"`
+	Revision        *NativePaperRevision `json:"revision,omitempty"`
+	URLKind         string               `json:"url_kind,omitempty"`
+	PublisherPDFURL string               `json:"publisher_pdf_url,omitempty"`
+	ID              string               `json:"id"`
+	Title           string               `json:"title"`
+	Abstract        string               `json:"abstract"`
+	Authors         []Author             `json:"authors"`
+	PublishedDate   string               `json:"published_date"`
+	PdfURL          *string              `json:"pdf_url"`
+	URL             string               `json:"url"`
+	DOI             string               `json:"doi"`
+	VenueName       string               `json:"venue_name"`
+	ReferenceLabel  string               `json:"reference_label"`
+	SourceID        int                  `json:"source_id"`
+	Source          *Source              `json:"source"`
+	SourcePaperID   string               `json:"source_paper_id"`
+	ShortID         string               `json:"short_id"`
+	Slug            string               `json:"slug"`
+	Metadata        any                  `json:"metadata"`
+	MarkdownReady   bool                 `json:"markdown_ready"`
 }
 
 type ProjectPaper struct {

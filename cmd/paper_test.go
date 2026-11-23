@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -12,6 +13,97 @@ import (
 	"github.com/paperzilla/pz/internal/config"
 	"github.com/spf13/cobra"
 )
+
+func TestPaperRevisions(t *testing.T) {
+	served := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		served++
+		if r.URL.Path != "/api/public/papers/abcd1234/revisions" || r.Header.Get("Authorization") != "" {
+			t.Errorf("unexpected public request %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"paper_id":"older","revisions":[{"version":"v3","paper_id":"newer","path":"/p/newer"},{"version":"v1","paper_id":"older","path":"/p/older"}]}`))
+	}))
+	defer server.Close()
+	t.Setenv("PZ_API_URL", server.URL)
+	writeTestTokens(t)
+	for _, asJSON := range []bool{false, true} {
+		cmd, out, _ := newPaperTestCommand(asJSON, false, "")
+		cmd.Flags().Bool("revisions", true, "")
+		if err := paperCmd.RunE(cmd, []string{"abcd1234"}); err != nil {
+			t.Fatal(err)
+		}
+		if asJSON {
+			if !strings.Contains(out.String(), `"path": "/p/older"`) {
+				t.Fatal(out.String())
+			}
+		} else if !strings.Contains(out.String(), "v3  newer  "+server.URL+"/p/newer\nv1  older  "+server.URL+"/p/older") {
+			t.Fatal(out.String())
+		}
+	}
+	for _, mode := range []string{"markdown", "project"} {
+		project := ""
+		if mode == "project" {
+			project = "project-1"
+		}
+		cmd, _, _ := newPaperTestCommand(false, mode == "markdown", project)
+		cmd.Flags().Bool("revisions", true, "")
+		if err := paperCmd.RunE(cmd, []string{"abcd1234"}); err == nil {
+			t.Fatal("expected flag conflict")
+		}
+	}
+	if served != 2 {
+		t.Fatalf("history calls = %d", served)
+	}
+}
+
+func TestRevisionSurvivesCLIJSONAndTextRendering(t *testing.T) {
+	const payload = `{"id":"older","venue_name":"arXiv","revision":{"source":"arxiv","native_id":"2401.12345","version":"v1"},"url_kind":"publisher","pdf_url":null,"publisher_pdf_url":"https://arxiv.org/pdf/2401.12345"}`
+	var paper api.Paper
+	if err := json.Unmarshal([]byte(payload), &paper); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := printPaper(&out, paper, true); err != nil {
+		t.Fatal(err)
+	}
+	var rendered map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rendered); err != nil {
+		t.Fatal(err)
+	}
+	rev, ok := rendered["revision"].(map[string]any)
+	pdf, hasPDF := rendered["pdf_url"]
+	if !ok || rev["version"] != "v1" || rev["native_id"] != "2401.12345" || !hasPDF || pdf != nil ||
+		rendered["publisher_pdf_url"] != paper.PublisherPDFURL || rendered["url_kind"] != "publisher" {
+		t.Fatal(out.String())
+	}
+	rec := api.ProjectPaper{ID: "rec-id", Paper: paper}
+	for _, render := range []func(){func() { writeCanonicalPaper(&out, paper) }, func() { writeProjectPaper(&out, rec) }} {
+		out.Reset()
+		render()
+		if !strings.Contains(out.String(), "arXiv · v1") || !strings.Contains(out.String(), "Publisher PDF:") {
+			t.Fatal(out.String())
+		}
+	}
+	out.Reset()
+	writeProjectPaperFeedList(&out, []api.ProjectPaper{rec})
+	if !strings.Contains(out.String(), "arXiv · v1") {
+		t.Fatal(out.String())
+	}
+}
+
+func TestPaperRevisionsEmptyHistory(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"paper_id":"paper","revisions":[]}`))
+	}))
+	defer server.Close()
+	writeTestTokens(t)
+	t.Setenv("PZ_API_URL", server.URL)
+	cmd, out, _ := newPaperTestCommand(false, false, "")
+	cmd.Flags().Bool("revisions", true, "")
+	if err := paperCmd.RunE(cmd, []string{"paper"}); err != nil || out.String() != "No observed revisions.\n" {
+		t.Fatalf("error %v, output %q", err, out.String())
+	}
+}
 
 func TestPaperCommandFetchesPublicPaperAfterAuthPreflight(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
